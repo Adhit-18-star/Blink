@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blink</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#071426;
+            color:white;
+        }
+
+        .navbar{
+            background:#0f1f38;
+            padding:15px 25px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
+        .nav-links a{
+            color:white;
+            text-decoration:none;
+            margin-left:20px;
+        }
+
+        .nav-links a:hover{
+            color:#4d88ff;
+        }
+
+        .container{
+            padding:30px;
+        }
+
+        .card{
+            background:#0f1f38;
+            padding:20px;
+            border-radius:15px;
+            margin-bottom:20px;
+        }
+
+        button{
+            background:#1e5eff;
+            color:white;
+            border:none;
+            padding:10px 20px;
+            border-radius:10px;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#3b75ff;
+        }
+
+        input{
+            padding:10px;
+            border-radius:10px;
+            border:none;
+            width:250px;
+            margin:5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div class="logo">🚀 Blink</div>
+
+    <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/users">Users</a>
+        <a href="/friends">Friends</a>
+        <a href="/requests">Requests</a>
+        <a href="/logout">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+{% block content %}
+{% endblock %}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Friend Requests</h1>
+
+    {% for request in requests %}
+        <p>
+            {{ request[1] }}
+
+            <form action="/accept-request" method="post" style="display:inline;">
+                <input type="hidden" name="request_id" value="{{ request[0] }}">
+                <button>Accept</button>
+            </form>
+        </p>
+    {% endfor %}
+</body>
+</html>

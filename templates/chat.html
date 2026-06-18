@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#0f172a;
+            color:white;
+            margin:0;
+            padding:20px;
+        }
+
+        .chat-box{
+            height:400px;
+            overflow-y:auto;
+            background:#1e293b;
+            padding:15px;
+            border-radius:10px;
+            margin-bottom:15px;
+        }
+
+        .msg{
+            margin-bottom:15px;
+            padding:10px;
+            background:#334155;
+            border-radius:10px;
+        }
+
+        .sender{
+            font-weight:bold;
+            color:#38bdf8;
+        }
+
+        img{
+            max-width:200px;
+            border-radius:10px;
+            margin-top:5px;
+        }
+
+        form{
+            margin-top:10px;
+        }
+
+        input{
+            padding:10px;
+            width:70%;
+            border-radius:8px;
+            border:none;
+        }
+
+        button{
+            padding:10px;
+            border:none;
+            border-radius:8px;
+            background:#2563eb;
+            color:white;
+            cursor:pointer;
+        }
+
+        .delete-btn{
+            background:red;
+            margin-top:5px;
+            font-size:12px;
+        }
+
+        a{
+            text-decoration:none;
+        }
+    </style>
+</head>
+
+<div id="imageViewer"
+     style="display:none;
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:black;">
+
+    <img id="fullImage"
+         style="max-width:95%;
+                max-height:95%;
+                position:absolute;
+                top:50%;
+                left:50%;
+                transform:translate(-50%,-50%);">
+
+</div> 
+
+<body>
+
+<h2>Chat with {{ friend }}</h2>
+
+<div class="chat-box">
+
+    {% for id, sender, msg in messages %}
+
+        <div class="msg">
+
+            <div class="sender">{{ sender }}</div>
+
+            {% if msg.startswith("/uploads/") %}
+                <img
+                    src="{{ msg }}"
+                    style="max-width:200px; cursor:pointer;"
+                    onclick="openImage('{{ msg }}')"
+                >
+            {% else %}
+                <div>{{ msg }}</div>
+            {% endif %}
+
+            <a href="/delete-message/{{ id }}/{{ friend }}">
+                <button class="delete-btn">Delete</button>
+            </a>
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
+<!-- TEXT MESSAGE -->
+<form method="post" action="/chat/{{ friend }}">
+    <input type="text" name="message" placeholder="Type message..." required>
+    <button type="submit">Send</button>
+</form>
+
+<!-- IMAGE UPLOAD -->
+<form method="post" action="/upload/{{ friend }}" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <button type="submit">📸 Send Image</button>
+</form>
+
+<br>
+<a href="/friends">
+    <button>Back</button>
+</a>
+
+<a href="/camera/{{ friend }}">
+    <button>📸 Open Camera</button>
+</a>
+
+<a href="/filters/{{ friend }}">
+    <button>Filters Camera</button>
+</a>
+
+<script>
+function openImage(src) {
+
+    document.getElementById("fullImage").src = src;
+
+    document.getElementById("imageViewer").style.display = "block";
+}
+
+document.getElementById("imageViewer").onclick = function() {
+    this.style.display = "none";
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blink Filters</title>
+</head>
+<body>
+
+<select id="filterSelect">
+    <option value="dog">Dog</option>
+    <option value="glasses">Sunglasses</option>
+    <option value="crown">Crown</option>
+</select>
+
+<h2>Face Filter Test</h2>
+
+<video id="video" autoplay playsinline style="display:none;"></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+
+<button onclick="capturePhoto()">
+    📸 Capture & Send
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+<script>
+const dogNose = new Image();
+dogNose.src = "/static/dog_nose.png";
+
+const dogEar = new Image();
+dogEar.src = "/static/dog_ear.png";
+
+const glasses = new Image();
+glasses.src = "/static/sunglasses.png";
+
+const crown = new Image();
+crown.src = "/static/crown.png";
+
+
+
+const videoElement = document.getElementById("video");
+
+navigator.mediaDevices.getUserMedia({
+    video: true
+}).then(stream => {
+    videoElement.srcObject = stream;
+});
+
+const faceMesh = new FaceMesh({
+    locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+    }
+});
+
+faceMesh.setOptions({
+    maxNumFaces: 1,
+    refineLandmarks: true,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+});
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+faceMesh.onResults(results => {
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(
+        results.image,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    if (results.multiFaceLandmarks) {
+
+        for (const landmarks of results.multiFaceLandmarks) {
+
+            const leftHead = landmarks[103];
+            const rightHead = landmarks[332];
+
+            const leftTemple = landmarks[127];
+            const rightTemple = landmarks[356];
+
+            const leftEye = landmarks[33];
+            const rightEye = landmarks[263];
+
+            const angle = Math.atan2(
+                rightTemple.y - leftTemple.y,
+                rightTemple.x - leftTemple.x
+            );
+
+            const eyeDistance =
+            Math.abs(rightEye.x - leftEye.x) * canvas.width;
+
+            const glassesSize = eyeDistance * 1.6;
+
+            const glassesAngle = Math.atan2(
+                rightEye.y - leftEye.y,
+                rightEye.x - leftEye.x
+            );
+
+            const noseTop = landmarks[1];
+            const noseLeft = landmarks[98];
+            const noseRight = landmarks[327];
+
+            const noseWidth =
+            Math.abs(noseRight.x - noseLeft.x) * canvas.width;
+
+            const size = noseWidth * 1.8;
+
+            const earSize = noseWidth * 4;
+
+            const forehead = landmarks[10];
+
+            const crownSize = eyeDistance * 2.2;
+
+            if (document.getElementById("filterSelect").value === "dog") {
+
+                ctx.drawImage(
+                    dogNose,
+                    noseTop.x * canvas.width - size/2,
+                    noseTop.y * canvas.height - size/2,
+                    size,
+                    size
+                );
+
+                
+
+                const forehead = landmarks[10];
+
+                ctx.save();
+
+                ctx.translate(
+                    forehead.x * canvas.width,
+                    forehead.y * canvas.height
+                );
+
+                ctx.rotate(angle);
+
+                ctx.drawImage(
+                    dogEar,
+                    -earSize,
+                    -earSize * 0.65,
+                    earSize * 2,
+                    earSize
+                );
+
+                ctx.restore();
+            }
+
+            if (document.getElementById("filterSelect").value === "glasses") {
+
+                ctx.save();
+
+                ctx.translate(
+                    (leftEye.x + rightEye.x) / 2 * canvas.width,
+                    (leftEye.y + rightEye.y) / 2 * canvas.height
+                );
+
+                ctx.rotate(glassesAngle);
+
+                ctx.drawImage(
+                    glasses,
+                    -glassesSize / 2,
+                    -glassesSize / 1.7,
+                    glassesSize,
+                    glassesSize / 0.8
+                );
+
+                ctx.restore();
+            }
+
+
+            if (document.getElementById("filterSelect").value === "crown") {
+
+                ctx.save();
+
+                ctx.translate(
+                    forehead.x * canvas.width,
+                    forehead.y * canvas.height
+                );
+
+                ctx.rotate(glassesAngle);
+
+                ctx.drawImage(
+                    crown,
+                    -crownSize / 2,
+                    -crownSize * 1.2,
+                    crownSize,
+                    crownSize
+                );
+
+                ctx.restore();
+            }
+
+            
+
+            
+        }
+    }
+});
+
+const camera = new Camera(videoElement, {
+    onFrame: async () => {
+        await faceMesh.send({image: videoElement});
+    },
+    width: 640,
+    height: 480
+});
+
+function capturePhoto() {
+
+    const imageData = canvas.toDataURL("image/png");
+
+    fetch("/camera-upload/{{ friend }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            image: imageData
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        window.location.href = "/chat/{{ friend }}";
+
+    });
+
+}
+
+camera.start();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - Blink</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#071426;
+            color:white;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            margin:0;
+        }
+
+        .card{
+            background:#0f1f38;
+            padding:40px;
+            border-radius:20px;
+            width:400px;
+            text-align:center;
+            border:1px solid #334155;
+            box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+
+        h1{
+            margin-bottom:10px;
+        }
+
+        p{
+            color:#b7c4d6;
+            margin-bottom:25px;
+        }
+
+        input{
+            width:90%;
+            padding:12px;
+            margin:10px 0;
+            border:none;
+            border-radius:10px;
+            background:#1e293b;
+            color:white;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            margin-top:15px;
+            border:none;
+            border-radius:10px;
+            background:#22c55e;
+            color:white;
+            font-size:16px;
+            font-weight:bold;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#16a34a;
+        }
+
+        a{
+            color:#60a5fa;
+            text-decoration:none;
+        }
+
+        .footer{
+            margin-top:20px;
+            color:#94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+
+    <h1>🚀 Blink</h1>
+
+    <p>Create your account</p>
+
+    <form method="post" action="/register">
+
+        <input
+            name="username"
+            placeholder="Username"
+            required
+        >
+
+        <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            required
+        >
+
+        <button type="submit">
+            Register
+        </button>
+
+    </form>
+
+    <div class="footer">
+        Already have an account?
+        <a href="/login">Login</a>
+    </div>
+
+</div>
+
+</body>
+</html>

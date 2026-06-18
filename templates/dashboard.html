@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blink Dashboard</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#071426;
+            color:white;
+        }
+
+        .navbar{
+            background:#0f1f38;
+            padding:15px 25px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
+        .username{
+            color:#b7c4d6;
+        }
+
+        .container{
+            max-width:1000px;
+            margin:auto;
+            padding:30px;
+        }
+
+        .welcome{
+            margin-bottom:30px;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:20px;
+        }
+
+        .card{
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:18px;
+            padding:25px;
+            text-align:center;
+            transition:0.3s;
+        }
+
+        .card:hover{
+            transform:translateY(-4px);
+        }
+
+        .card h2{
+            margin-top:0;
+        }
+
+        .btn{
+            display:inline-block;
+            margin-top:15px;
+            padding:10px 18px;
+            background:#1e5eff;
+            color:white;
+            text-decoration:none;
+            border-radius:10px;
+        }
+
+        .btn:hover{
+            background:#3b75ff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo">
+    <img src="/static/logo.png" height="50">
+    Blink
+</div>
+
+<div class="navbar">
+
+
+    <div class="username">
+        Welcome, {{ username }}
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="welcome">
+        <h1>Dashboard</h1>
+        <p>Your Blink control center.</p>
+    </div>
+
+    <div class="grid">
+
+        <div class="card">
+            <h2>👥 Users</h2>
+            <p>Find and connect with people.</p>
+            <a href="/users" class="btn">Open</a>
+        </div>
+
+        <div class="card">
+            <h2>🤝 Friends</h2>
+            <p>View your friends list.</p>
+            <a href="/friends" class="btn">Open</a>
+        </div>
+
+        <div class="card">
+            <h2>📨 Requests</h2>
+            <p>Manage friend requests.</p>
+            <a href="/requests" class="btn">Open</a>
+        </div>
+
+        <div class="card">
+            <h2>💬 Messages</h2>
+            <p>View message database.</p>
+            <a href="/debug-messages" class="btn">Open</a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera</title>
+</head>
+
+<body style="background:#0f172a; color:white; text-align:center; padding:20px;">
+
+<h2>Snap Camera 📸</h2>
+
+<video id="video" autoplay playsinline width="300"
+style="transform: scaleX(-1); border-radius:10px;"></video>
+
+<br><br>
+
+<button onclick="startCamera()">Start Camera</button>
+<button onclick="capturePhoto()">📸 Capture</button>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+let stream;
+
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(s => {
+        stream = s;
+        document.getElementById("video").srcObject = stream;
+    })
+    .catch(err => {
+        alert("Camera error or permission denied");
+    });
+}
+
+function capturePhoto() {
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    let ctx = canvas.getContext("2d");
+    ctx.save();
+
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+
+    ctx.restore();
+
+    let image = canvas.toDataURL("image/png");
+
+    sendToServer(image);
+}
+
+function sendToServer(imageData) {
+    fetch("/camera-upload/{{ friend }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image: imageData })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Sent to chat!");
+        console.log(data);
+    });
+}
+</script>
+
+</body>
+</html>

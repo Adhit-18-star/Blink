@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>All Users</h1>
+
+    {% for user in users %}
+        <p>
+            {{ user[0] }}
+
+            <form action="/send-request" method="post" style="display:inline;">
+                <input type="hidden" name="receiver" value="{{ user[0] }}">
+                <button type="submit">Send Friend Request</button>
+            </form>
+        </p>
+    {% endfor %}
+
+</body>
+</html>

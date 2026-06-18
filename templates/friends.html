@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Friends - Blink</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#071426;
+            color:white;
+        }
+
+        .navbar{
+            background:#0f1f38;
+            padding:15px 25px;
+        }
+
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
+        .container{
+            max-width:900px;
+            margin:auto;
+            padding:30px;
+        }
+
+        h1{
+            margin-bottom:25px;
+        }
+
+        .friend-card{
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:15px;
+            padding:20px;
+            margin-bottom:15px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .friend-name{
+            font-size:18px;
+            font-weight:bold;
+        }
+
+        .btn{
+            background:#1e5eff;
+            color:white;
+            text-decoration:none;
+            padding:10px 18px;
+            border-radius:10px;
+        }
+
+        .btn:hover{
+            background:#3b75ff;
+        }
+
+        .back{
+            display:inline-block;
+            margin-top:20px;
+            color:#60a5fa;
+            text-decoration:none;
+        }
+
+        .empty{
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:15px;
+            padding:20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🚀 Blink</div>
+</div>
+
+<div class="container">
+
+    <h1>🤝 Your Friends</h1>
+
+    {% if friends and friends|length > 0 %}
+
+        {% for f in friends %}
+
+        <div class="friend-card">
+
+            <div class="friend-name">
+                {{ f }}
+            </div>
+
+            <a href="/chat/{{ f }}" class="btn">
+                Chat 💬
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="empty">
+            No friends yet.
+        </div>
+
+    {% endif %}
+
+    <a href="/dashboard" class="back">
+        ← Back to Dashboard
+    </a>
+
+</div>
+
+</body>
+</html>
