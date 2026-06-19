@@ -57,10 +57,7 @@ init_db()
 # ---------------- HOME ----------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request}
-    )
+    return RedirectResponse("/login", status_code=303)
 
 
 # ---------------- LOGIN ----------------
@@ -441,3 +438,7 @@ def filters(request: Request, friend: str):
             "friend": friend
         }
     )
+    
+@app.get("/test")
+def test():
+    return HTMLResponse("<h1>Test works</h1>")
