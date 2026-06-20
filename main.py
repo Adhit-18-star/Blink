@@ -89,12 +89,9 @@ def register(
         conn.close()
         return HTMLResponse("Username already exists")
 
-@app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request}
-    )
+@app.get("/login")
+def login_page():
+    return {"message": "login works"}
 
 @app.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
