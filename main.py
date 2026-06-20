@@ -442,3 +442,10 @@ def filters(request: Request, friend: str):
 @app.get("/test")
 def test():
     return HTMLResponse("<h1>Test works</h1>")
+
+@app.get("/test-template")
+def test_template(request: Request):
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request}
+    )
