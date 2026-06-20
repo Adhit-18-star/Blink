@@ -88,10 +88,14 @@ def register(
     except:
         conn.close()
         return HTMLResponse("Username already exists")
-
-@app.get("/login")
+@app.get("/login", response_class=HTMLResponse)
 def login_page():
-    return {"message": "login works"}
+    return """
+    <h1>Login Test</h1>
+    <form>
+        <input placeholder='username'>
+    </form>
+    """
 
 @app.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
