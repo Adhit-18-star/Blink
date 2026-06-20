@@ -90,8 +90,11 @@ def register(
         return HTMLResponse("Username already exists")
 
 @app.get("/login")
-def login_page():
-    return HTMLResponse("<h1>LOGIN ROUTE WORKS</h1>")
+def login_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html"
+    )
 
 @app.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
