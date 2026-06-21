@@ -6,3 +6,4 @@ python-multipart
 itsdangerous
 numpy
 opencv-python
+psycopg2-binary

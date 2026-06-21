@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
 
     <style>
@@ -161,7 +162,24 @@ document.getElementById("imageViewer").onclick = function() {
 </script>
 
 <script>
-setInterval(() => location.reload(), 2000);
+let lastCount = 0;
+
+async function loadMessages() {
+    const res = await fetch(window.location.href);
+    const html = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const newMessages = doc.querySelector("#messages").innerHTML;
+    const current = document.querySelector("#messages");
+
+    if (current.innerHTML !== newMessages) {
+        current.innerHTML = newMessages;
+    }
+}
+
+setInterval(loadMessages, 2000);
 </script>
 
 </body>

@@ -7,7 +7,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import sqlite3
+import psycopg2
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
 app = FastAPI()
 
@@ -24,7 +29,7 @@ templates = Jinja2Templates(directory="templates")
 
 # ---------------- DB ----------------
 def init_db():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""CREATE TABLE IF NOT EXISTS users(
@@ -73,12 +78,12 @@ def register(
     username: str = Form(...),
     password: str = Form(...)
 ):
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     try:
         cur.execute(
-            "INSERT INTO users(username,password) VALUES(?,?)",
+            "INSERT INTO users(username,password) VALUES(%s,%s)",
             (username, password)
         )
         conn.commit()
@@ -98,11 +103,11 @@ def login_page(request: Request):
 
 @app.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT username FROM users WHERE username=? AND password=?",
+        "SELECT username FROM users WHERE username=%s AND password=%s",
         (username, password)
     )
 
@@ -137,10 +142,10 @@ def users(request: Request):
     if not username:
         return RedirectResponse("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT username FROM users WHERE username != ?", (username,))
+    cur.execute("SELECT username FROM users WHERE username != %s", (username,))
     users = cur.fetchall()
     conn.close()
 
@@ -157,11 +162,11 @@ def send_request(request: Request, receiver: str = Form(...)):
     if not sender:
         return RedirectResponse("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO friends(sender, receiver, status) VALUES (?, ?, 'pending')",
+        "INSERT INTO friends(sender, receiver, status) VALUES (%s, %s, 'pending')",
         (sender, receiver)
     )
 
@@ -178,11 +183,11 @@ def requests_page(request: Request):
     if not username:
         return RedirectResponse("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, sender FROM friends WHERE receiver=? AND status='pending'",
+        "SELECT id, sender FROM friends WHERE receiver=%s AND status='pending'",
         (username,)
     )
 
@@ -198,10 +203,10 @@ def requests_page(request: Request):
 # ---------------- ACCEPT REQUEST ----------------
 @app.post("/accept-request")
 def accept(request_id: int = Form(...)):
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("UPDATE friends SET status='accepted' WHERE id=?", (request_id,))
+    cur.execute("UPDATE friends SET status='accepted' WHERE id=%s", (request_id,))
 
     conn.commit()
     conn.close()
@@ -216,14 +221,14 @@ def friends(request: Request):
     if not username:
         return RedirectResponse("/login", status_code=303)
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT sender, receiver
         FROM friends
         WHERE status='accepted'
-        AND (sender=? OR receiver=?)
+        AND (sender=%s OR receiver=%s)
     """, (username, username))
 
     data = cur.fetchall()
@@ -247,14 +252,14 @@ def chat(request: Request, friend: str):
     if not username:
         return RedirectResponse("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT id, sender, message
         FROM messages
-        WHERE (sender=? AND receiver=?)
-        OR (sender=? AND receiver=?)
+        WHERE (sender=%s AND receiver=%s)
+        OR (sender=%s AND receiver=%s)
         ORDER BY id 
     """, (username, friend, friend, username))
 
@@ -279,11 +284,11 @@ def send_message(request: Request, friend: str, message: str = Form(...)):
     if not username:
         return RedirectResponse("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (?, ?, ?)",
+        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
         (username, friend, message)
     )
 
@@ -312,7 +317,7 @@ def dashboard(request: Request):
     
 @app.get("/debug-messages")
 def debug_messages():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT * FROM messages")
@@ -325,7 +330,7 @@ def debug_messages():
 
 @app.get("/clear-messages")
 def clear_messages():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("DELETE FROM messages")
@@ -352,11 +357,11 @@ def upload_image(friend: str, file: UploadFile = File(...), request: Request = N
     with open(file_path, "wb") as buffer:
         buffer.write(file.file.read())
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (?, ?, ?)",
+        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
         (username, friend, file_path)
     )
 
@@ -368,11 +373,11 @@ def upload_image(friend: str, file: UploadFile = File(...), request: Request = N
 @app.get("/delete-message/{msg_id}/{friend}")
 def delete_message(msg_id: int, friend: str):
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "DELETE FROM messages WHERE id=?",
+        "DELETE FROM messages WHERE id=%s",
         (msg_id,)
     )
 
@@ -407,13 +412,13 @@ async def camera_upload(friend: str, request: Request):
     with open(save_path, "wb") as f:
         f.write(base64.b64decode(image_data))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     username = request.session.get("username")
 
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (?, ?, ?)",
+        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
         (username, friend, db_path)
     )
 
@@ -452,7 +457,7 @@ def test_template(request: Request):
 
 @app.get("/test-users")
 def test_users():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT * FROM users")
@@ -464,7 +469,7 @@ def test_users():
 
 @app.get("/count-users")
 def count_users():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT COUNT(*) FROM users")
@@ -479,11 +484,11 @@ def count_users():
 def debug_users_page(request: Request):
     username = request.session.get("username")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT username FROM users WHERE username != ?",
+        "SELECT username FROM users WHERE username != %s",
         (username,)
     )
 
