@@ -449,3 +449,27 @@ def test_template(request: Request):
         "login.html",
         {"request": request}
     )
+    
+@app.get("/debug-users")
+def debug_users():
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    cur.execute("SELECT username FROM users")
+    data = cur.fetchall()
+
+    conn.close()
+
+    return data
+
+@app.get("/test-users")
+def test_users():
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM users")
+    data = cur.fetchall()
+
+    conn.close()
+
+    return {"users": data}
