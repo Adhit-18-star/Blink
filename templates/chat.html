@@ -72,6 +72,11 @@
     </style>
 </head>
 
+<body>
+
+<h2>Chat with {{ friend }}</h2>
+
+<!-- IMAGE VIEWER -->
 <div id="imageViewer"
      style="display:none;
             position:fixed;
@@ -89,13 +94,10 @@
                 left:50%;
                 transform:translate(-50%,-50%);">
 
-</div> 
+</div>
 
-<body>
-
-<h2>Chat with {{ friend }}</h2>
-
-<div class="chat-box">
+<!-- MESSAGES BOX -->
+<div class="chat-box" id="messages">
 
     {% for id, sender, msg in messages %}
 
@@ -106,7 +108,7 @@
             {% if msg.startswith("/uploads/") %}
                 <img
                     src="{{ msg }}"
-                    style="max-width:200px; cursor:pointer;"
+                    style="cursor:pointer;"
                     onclick="openImage('{{ msg }}')"
                 >
             {% else %}
@@ -136,23 +138,14 @@
 </form>
 
 <br>
-<a href="/friends">
-    <button>Back</button>
-</a>
 
-<a href="/camera/{{ friend }}">
-    <button>📸 Open Camera</button>
-</a>
-
-<a href="/filters/{{ friend }}">
-    <button>Filters Camera</button>
-</a>
+<a href="/friends"><button>Back</button></a>
+<a href="/camera/{{ friend }}"><button>📸 Open Camera</button></a>
+<a href="/filters/{{ friend }}"><button>Filters Camera</button></a>
 
 <script>
 function openImage(src) {
-
     document.getElementById("fullImage").src = src;
-
     document.getElementById("imageViewer").style.display = "block";
 }
 
@@ -161,21 +154,21 @@ document.getElementById("imageViewer").onclick = function() {
 };
 </script>
 
+<!-- AUTO REFRESH -->
 <script>
-let lastCount = 0;
-
 async function loadMessages() {
-    const res = await fetch(window.location.href);
+    const res = await fetch(window.location.href, { cache: "no-store" });
     const html = await res.text();
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    const newMessages = doc.querySelector("#messages").innerHTML;
-    const current = document.querySelector("#messages");
+    const newMessages = doc.querySelector("#messages");
 
-    if (current.innerHTML !== newMessages) {
-        current.innerHTML = newMessages;
+    const currentMessages = document.querySelector("#messages");
+
+    if (newMessages && currentMessages) {
+        currentMessages.innerHTML = newMessages.innerHTML;
     }
 }
 
