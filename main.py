@@ -473,3 +473,25 @@ def count_users():
     conn.close()
 
     return {"count": count}
+
+
+@app.get("/debug-users-page")
+def debug_users_page(request: Request):
+    username = request.session.get("username")
+
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT username FROM users WHERE username != ?",
+        (username,)
+    )
+
+    data = cur.fetchall()
+
+    conn.close()
+
+    return {
+        "logged_in_as": username,
+        "users": data
+    }
