@@ -539,3 +539,17 @@ def search_users(request: Request, q: str = ""):
     conn.close()
 
     return {"users": users}
+
+@app.get("/test-users")
+def test_users():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT username FROM users")
+
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return users
