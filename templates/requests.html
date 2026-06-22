@@ -1,17 +1,121 @@
 <!DOCTYPE html>
+
 <html>
+<head>
+    <title>Friend Requests</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        background:#0f172a;
+        color:white;
+        padding:20px;
+        margin:0;
+    }
+
+    h1{
+        text-align:center;
+    }
+
+    .card{
+        background:#1e293b;
+        border-radius:12px;
+        padding:15px;
+        margin-bottom:12px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+
+    .username{
+        font-size:18px;
+        font-weight:bold;
+    }
+
+    button{
+        background:#22c55e;
+        color:white;
+        border:none;
+        padding:10px 15px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+    button:hover{
+        background:#16a34a;
+    }
+
+    .empty{
+        text-align:center;
+        color:#94a3b8;
+        margin-top:40px;
+    }
+
+    .back{
+        display:block;
+        margin-top:20px;
+        text-align:center;
+    }
+
+    .back a{
+        color:#60a5fa;
+        text-decoration:none;
+    }
+</style>
+```
+
+</head>
+
 <body>
-    <h1>Friend Requests</h1>
 
-    {% for request in requests %}
-        <p>
+<h1>Friend Requests</h1>
+
+{% if requests %}
+
+```
+{% for request in requests %}
+
+    <div class="card">
+
+        <div class="username">
             {{ request[1] }}
+        </div>
 
-            <form action="/accept-request" method="post" style="display:inline;">
-                <input type="hidden" name="request_id" value="{{ request[0] }}">
-                <button>Accept</button>
-            </form>
-        </p>
-    {% endfor %}
+        <form action="/accept-request" method="post">
+
+            <input
+                type="hidden"
+                name="request_id"
+                value="{{ request[0] }}"
+            >
+
+            <button type="submit">
+                Accept
+            </button>
+
+        </form>
+
+    </div>
+
+{% endfor %}
+```
+
+{% else %}
+
+```
+<div class="empty">
+    No friend requests yet.
+</div>
+```
+
+{% endif %}
+
+<div class="back">
+    <a href="/dashboard">← Back to Dashboard</a>
+</div>
+
 </body>
 </html>
