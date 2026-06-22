@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, Form
 from fastapi import File, UploadFile
+from datetime import datetime
 import os
 import base64
 import uuid
@@ -49,14 +50,18 @@ def init_db():
         )
     """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS messages(
-            id SERIAL PRIMARY KEY,
-            sender TEXT,
-            receiver TEXT,
-            message TEXT
-        )
-    """)
+    cur.execute("""CREATE TABLE IF NOT EXISTS messages(
+        id SERIAL PRIMARY KEY,
+        sender TEXT,
+        receiver TEXT,
+        message TEXT,
+        timestamp TEXT
+    )""")
+    
+    try:
+        cur.execute("ALTER TABLE messages ADD COLUMN timestamp TEXT")
+    except:
+        pass
 
     conn.commit()
     conn.close()
@@ -262,7 +267,7 @@ def chat(request: Request, friend: str):
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, sender, message
+        SELECT id, sender, message, timestamp
         FROM messages
         WHERE (sender=%s AND receiver=%s)
         OR (sender=%s AND receiver=%s)
@@ -293,9 +298,11 @@ def send_message(request: Request, friend: str, message: str = Form(...)):
     conn = get_conn()
     cur = conn.cursor()
 
+    current_time = datetime.now().strftime("%I:%M %p")
+
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
-        (username, friend, message)
+        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+        (username, friend, message, current_time)
     )
 
     conn.commit()
@@ -341,9 +348,11 @@ def upload_image(friend: str, file: UploadFile = File(...), request: Request = N
     conn = get_conn()
     cur = conn.cursor()
 
+    current_time = datetime.now().strftime("%I:%M %p")
+
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
-        (username, friend, file_path)
+        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+        (username, friend, file_path, current_time)
     )
 
     conn.commit()
@@ -398,9 +407,11 @@ async def camera_upload(friend: str, request: Request):
 
     username = request.session.get("username")
 
+    current_time = datetime.now().strftime("%I:%M %p")
+
     cur.execute(
-        "INSERT INTO messages(sender, receiver, message) VALUES (%s, %s, %s)",
-        (username, friend, db_path)
+        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+        (username, friend, db_path, current_time)
     )
 
     conn.commit()
