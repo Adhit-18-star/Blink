@@ -506,3 +506,23 @@ def debug_users_page(request: Request):
         "logged_in_as": username,
         "users": data
     }
+    
+@app.get("/search-users")
+def search_users(request: Request, q: str):
+    username = request.session.get("username")
+
+    if not username:
+        return {"error": "not logged in"}
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT username FROM users WHERE username LIKE %s AND username != %s",
+        (f"%{q}%", username)
+    )
+
+    users = cur.fetchall()
+    conn.close()
+
+    return {"users": users}

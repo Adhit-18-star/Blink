@@ -1,19 +1,81 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Users</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#0f172a;
+            color:white;
+            padding:20px;
+        }
+
+        input{
+            width:100%;
+            padding:10px;
+            border-radius:8px;
+            border:none;
+            margin-bottom:15px;
+        }
+
+        .card{
+            background:#1e293b;
+            padding:10px;
+            margin-bottom:10px;
+            border-radius:10px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        button{
+            padding:8px;
+            border:none;
+            border-radius:6px;
+            background:#22c55e;
+            color:white;
+            cursor:pointer;
+        }
+    </style>
+</head>
+
 <body>
-    <h1>All Users</h1>
-    <p>{{ users }}</p>
 
-    {% for user in users %}
-        <p>
-            {{ user[0] }}
+<h2>All Users</h2>
 
-            <form action="/send-request" method="post" style="display:inline;">
-                <input type="hidden" name="receiver" value="{{ user[0] }}">
-                <button type="submit">Send Friend Request</button>
+<input type="text" id="search" placeholder="Search users...">
+
+<div id="userList"></div>
+
+<script>
+async function loadUsers(q="") {
+    const res = await fetch(`/search-users?q=${q}`);
+    const data = await res.json();
+
+    const box = document.getElementById("userList");
+    box.innerHTML = "";
+
+    data.users.forEach(u => {
+        box.innerHTML += `
+        <div class="card">
+            <span>${u[0]}</span>
+
+            <form method="post" action="/send-request">
+                <input type="hidden" name="receiver" value="${u[0]}">
+                <button>Request</button>
             </form>
-        </p>
-    {% endfor %}
+        </div>`;
+    });
+}
+
+document.getElementById("search").addEventListener("input", (e) => {
+    loadUsers(e.target.value);
+});
+
+loadUsers();
+</script>
 
 </body>
 </html>
