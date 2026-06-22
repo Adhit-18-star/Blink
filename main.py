@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Form
 from fastapi import File, UploadFile
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
 import base64
 import uuid
@@ -298,7 +299,9 @@ def send_message(request: Request, friend: str, message: str = Form(...)):
     conn = get_conn()
     cur = conn.cursor()
 
-    current_time = datetime.now().strftime("%I:%M %p")
+    current_time = datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    ).strftime("%I:%M %p")
 
     cur.execute(
         "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
@@ -407,7 +410,9 @@ async def camera_upload(friend: str, request: Request):
 
     username = request.session.get("username")
 
-    current_time = datetime.now().strftime("%I:%M %p")
+    current_time = datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    ).strftime("%I:%M %p")
 
     cur.execute(
         "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
