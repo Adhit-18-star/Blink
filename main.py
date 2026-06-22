@@ -320,31 +320,6 @@ def dashboard(request: Request):
         "request": request,
         "username": username
     })
-    
-@app.get("/debug-messages")
-def debug_messages():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM messages")
-    data = cur.fetchall()
-
-    conn.close()
-
-    return data
-
-
-@app.get("/clear-messages")
-def clear_messages():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("DELETE FROM messages")
-
-    conn.commit()
-    conn.close()
-
-    return {"message": "all messages deleted"}
 
 @app.get("/logout")
 def logout(request: Request):
