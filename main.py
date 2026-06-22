@@ -508,7 +508,7 @@ def debug_users_page(request: Request):
     }
     
 @app.get("/search-users")
-def search_users(request: Request, q: str):
+def search_users(request: Request, q: str = ""):
     username = request.session.get("username")
 
     if not username:
@@ -517,12 +517,25 @@ def search_users(request: Request, q: str):
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT username FROM users WHERE username LIKE %s AND username != %s",
-        (f"%{q}%", username)
-    )
+    cur.execute("""
+        SELECT
+            u.username,
+            CASE
+                WHEN f.id IS NOT NULL THEN 'sent'
+                ELSE 'none'
+            END AS request_status
+        FROM users u
+        LEFT JOIN friends f
+            ON f.sender = %s
+            AND f.receiver = u.username
+        WHERE u.username ILIKE %s
+        AND u.username != %s
+        ORDER BY u.username
+    """, (username, f"%{q}%", username))
 
     users = cur.fetchall()
+
+    cur.close()
     conn.close()
 
     return {"users": users}

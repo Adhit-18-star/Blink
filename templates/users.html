@@ -64,7 +64,17 @@ async function loadUsers(q="") {
 
             <form method="post" action="/send-request">
                 <input type="hidden" name="receiver" value="${u[0]}">
-                <button>Request</button>
+                ${u[1] === "sent"
+                %s
+                '<button disabled>✓ Request Sent</button>'
+                :
+                                        `
+                <form method="post" action="/send-request">
+                    <input type="hidden" name="receiver" value="${u[0]}">
+                    <button>Request</button>
+                </form>
+                    `
+                }
             </form>
         </div>`;
     });
