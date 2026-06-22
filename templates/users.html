@@ -1,44 +1,59 @@
 <!DOCTYPE html>
+
 <html>
 <head>
     <title>Users</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body{
-            font-family: Arial;
-            background:#0f172a;
-            color:white;
-            padding:20px;
-        }
+```
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        background:#0f172a;
+        color:white;
+        padding:20px;
+        margin:0;
+    }
 
-        input{
-            width:100%;
-            padding:10px;
-            border-radius:8px;
-            border:none;
-            margin-bottom:15px;
-        }
+    h2{
+        text-align:center;
+    }
 
-        .card{
-            background:#1e293b;
-            padding:10px;
-            margin-bottom:10px;
-            border-radius:10px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
+    input{
+        width:100%;
+        padding:12px;
+        border-radius:8px;
+        border:none;
+        margin-bottom:15px;
+        box-sizing:border-box;
+    }
 
-        button{
-            padding:8px;
-            border:none;
-            border-radius:6px;
-            background:#22c55e;
-            color:white;
-            cursor:pointer;
-        }
-    </style>
+    .card{
+        background:#1e293b;
+        padding:15px;
+        margin-bottom:10px;
+        border-radius:10px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+
+    button{
+        padding:8px 12px;
+        border:none;
+        border-radius:6px;
+        background:#22c55e;
+        color:white;
+        cursor:pointer;
+    }
+
+    button:disabled{
+        background:#64748b;
+        cursor:not-allowed;
+    }
+</style>
+```
+
 </head>
 
 <body>
@@ -51,36 +66,38 @@
 
 <script>
 async function loadUsers(q="") {
-    const res = await fetch(`/search-users?q=${q}`);
+
+    const res = await fetch(`/search-users?q=${encodeURIComponent(q)}`);
     const data = await res.json();
 
     const box = document.getElementById("userList");
     box.innerHTML = "";
 
     data.users.forEach(u => {
-        box.innerHTML += `
-        <div class="card">
-            <span>${u[0]}</span>
 
-            <form method="post" action="/send-request">
-                <input type="hidden" name="receiver" value="${u[0]}">
-                ${u[1] === "sent"
-                %s
-                '<button disabled>✓ Request Sent</button>'
-                :
-                                        `
+        let buttonHtml = "";
+
+        if (u[1] === "sent") {
+            buttonHtml = '<button disabled>✓ Request Sent</button>';
+        } else {
+            buttonHtml = `
                 <form method="post" action="/send-request">
                     <input type="hidden" name="receiver" value="${u[0]}">
-                    <button>Request</button>
+                    <button type="submit">Request</button>
                 </form>
-                    `
-                }
-            </form>
-        </div>`;
+            `;
+        }
+
+        box.innerHTML += `
+            <div class="card">
+                <span>${u[0]}</span>
+                ${buttonHtml}
+            </div>
+        `;
     });
 }
 
-document.getElementById("search").addEventListener("input", (e) => {
+document.getElementById("search").addEventListener("input", function(e){
     loadUsers(e.target.value);
 });
 
