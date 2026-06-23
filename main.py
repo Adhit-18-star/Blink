@@ -572,3 +572,13 @@ def detective_clues(request: Request):
             "clues": clues
         }
     )
+    
+@app.get("/detective/suspects", response_class=HTMLResponse)
+def detective_suspects(request: Request):
+
+    return templates.TemplateResponse(
+        "suspects.html",
+        {
+            "request": request
+        }
+    )
