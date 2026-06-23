@@ -582,3 +582,21 @@ def detective_suspects(request: Request):
             "request": request
         }
     )
+    
+@app.post("/detective/result", response_class=HTMLResponse)
+def detective_result(
+    request: Request,
+    suspect: str = Form(...)
+):
+
+    correct = "Arjun"
+
+    return templates.TemplateResponse(
+        "result.html",
+        {
+            "request": request,
+            "suspect": suspect,
+            "correct": correct,
+            "won": suspect == correct
+        }
+    )

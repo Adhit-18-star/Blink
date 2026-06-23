@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#071426;
+            color:white;
+        }
+
+        .navbar{
+            background:#0f1f38;
+            padding:15px 25px;
+        }
+
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
+        .container{
+            max-width:800px;
+            margin:auto;
+            padding:30px;
+        }
+
+        .card{
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:15px;
+            padding:25px;
+        }
+
+        .btn{
+            background:#1e5eff;
+            color:white;
+            text-decoration:none;
+            padding:10px 18px;
+            border-radius:10px;
+            display:inline-block;
+            margin-top:20px;
+        }
+    </style>
+
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🚀 Blink</div>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        {% if won %}
+
+            <h1>🎉 Correct!</h1>
+
+            <p>
+                Arjun secretly borrowed the bat for extra practice.
+            </p>
+
+        {% else %}
+
+            <h1>❌ Wrong Guess</h1>
+
+            <p>
+                You selected: <b>{{ suspect }}</b>
+            </p>
+
+            <p>
+                The correct answer was <b>{{ correct }}</b>.
+            </p>
+
+        {% endif %}
+
+        <a href="/detective" class="btn">
+            Play Again 🕵️
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
