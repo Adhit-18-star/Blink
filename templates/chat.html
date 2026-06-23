@@ -152,6 +152,10 @@ function showNotification(sender, text) {
 
 </div>
 
+<button onclick="showNotification('Test User', 'Hello from Blink!')">
+Test Notification
+</button>
+
 <form method="post" action="/chat/{{ friend }}">
     <input type="text" name="message" placeholder="Type message..." required>
     <button type="submit">Send</button>
