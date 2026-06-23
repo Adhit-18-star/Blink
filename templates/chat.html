@@ -196,5 +196,40 @@ async function loadMessages() {
 setInterval(loadMessages, 2000);
 </script>
 
+<script>
+let oldCount = document.querySelectorAll(".msg").length;
+
+async function loadMessages() {
+
+    const res = await fetch(window.location.href, { cache: "no-store" });
+    const html = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const newMessages = doc.querySelector("#messages");
+    const currentMessages = document.querySelector("#messages");
+
+    if (newMessages && currentMessages) {
+
+        const newCount = newMessages.querySelectorAll(".msg").length;
+
+        if (newCount > oldCount) {
+
+            showNotification(
+                "{{ friend }}",
+                "You received a new message"
+            );
+
+            oldCount = newCount;
+        }
+
+        currentMessages.innerHTML = newMessages.innerHTML;
+    }
+}
+
+setInterval(loadMessages, 2000);
+</script>
+
 </body>
 </html>
