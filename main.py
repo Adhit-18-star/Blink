@@ -544,3 +544,31 @@ def test_users():
     conn.close()
 
     return users
+
+@app.get("/detective", response_class=HTMLResponse)
+def detective(request: Request):
+
+    return templates.TemplateResponse(
+        "detective.html",
+        {
+            "request": request
+        }
+    )
+    
+@app.get("/detective/clues", response_class=HTMLResponse)
+def detective_clues(request: Request):
+
+    clues = [
+        "Muddy shoe prints near the sports room",
+        "Watchman has keys",
+        "Arjun practiced on muddy ground",
+        "Coach left school at 5 PM"
+    ]
+
+    return templates.TemplateResponse(
+        "clues.html",
+        {
+            "request": request,
+            "clues": clues
+        }
+    )
