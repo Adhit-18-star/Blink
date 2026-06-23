@@ -82,6 +82,28 @@
 
 </head>
 
+<script>
+if ("Notification" in window) {
+    Notification.requestPermission();
+}
+</script>
+
+<script>
+function showNotification(sender, text) {
+
+    if (Notification.permission === "granted") {
+
+        new Notification(
+            "New message from " + sender,
+            {
+                body: text
+            }
+        );
+
+    }
+}
+</script>
+
 <body>
 
 <h2>Chat with {{ friend }}</h2>
