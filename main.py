@@ -592,7 +592,7 @@ def detective_result(
     correct = "Arjun"
 
     return templates.TemplateResponse(
-        "result.html",
+        "results.html",
         {
             "request": request,
             "suspect": suspect,
