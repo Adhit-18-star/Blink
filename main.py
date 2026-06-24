@@ -63,6 +63,27 @@ def init_db():
         cur.execute("ALTER TABLE messages ADD COLUMN timestamp TEXT")
     except:
         pass
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS detective_cases(
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            story TEXT,
+            clues TEXT,
+            suspects TEXT,
+            culprit TEXT,
+            difficulty TEXT,
+            xp INTEGER
+        )
+        """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS detective_progress(
+        id SERIAL PRIMARY KEY,
+        username TEXT,
+        case_id INTEGER,
+        xp INTEGER
+    )
+    """)
 
     conn.commit()
     conn.close()
@@ -598,5 +619,54 @@ def detective_result(
             "suspect": suspect,
             "correct": correct,
             "won": suspect == correct
+        }
+    )
+    
+@app.get("/add-case")
+def add_case():
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO detective_cases
+        (title, story, clues, suspects, culprit, difficulty, xp)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        "The Missing Cricket Bat",
+        "One day before the school final, the captain's lucky cricket bat disappeared.",
+        "Muddy shoe prints|Watchman has keys|Arjun practiced on muddy ground",
+        "Arjun|Watchman Suresh|Coach Ravi",
+        "Arjun",
+        "Easy",
+        10
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return {"message":"Case added"}
+
+@app.get("/detective")
+def detective_cases(request: Request):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id,title,difficulty,xp
+        FROM detective_cases
+        ORDER BY id
+    """)
+
+    cases = cur.fetchall()
+
+    conn.close()
+
+    return templates.TemplateResponse(
+        "detective_cases.html",
+        {
+            "request": request,
+            "cases": cases
         }
     )
