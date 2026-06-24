@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detective Game</title>
+    <title>Detective Game - Blink</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
@@ -17,6 +17,11 @@
             padding:15px 25px;
         }
 
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
         .container{
             max-width:900px;
             margin:auto;
@@ -27,45 +32,64 @@
             background:#0f1f38;
             border:1px solid #334155;
             border-radius:15px;
-            padding:20px;
+            padding:25px;
         }
 
         .btn{
             background:#1e5eff;
             color:white;
             text-decoration:none;
-            padding:10px 18px;
+            padding:12px 20px;
             border-radius:10px;
+            display:inline-block;
+            margin-right:10px;
+            margin-top:15px;
         }
 
+        .story{
+            color:#cbd5e1;
+            line-height:1.7;
+            margin-top:15px;
+        }
     </style>
 
 </head>
-<body style="background:#071426;color:white;font-family:Arial;padding:30px;">
+<body>
 
 <div class="navbar">
     <div class="logo">🚀 Blink</div>
 </div>
 
 <div class="container">
+
     <div class="card">
-        ...
+
+        <h1>🕵️ The Missing Cricket Bat</h1>
+
+        <div class="story">
+            One day before the school final, the captain's lucky cricket bat
+            disappeared from the sports room.
+
+            <br><br>
+
+            Three suspects have been identified.
+
+            <br><br>
+
+            Your mission is to examine the clues and discover who took the bat.
+        </div>
+
+        <a href="/detective/clues" class="btn">
+            Show Clues 🔍
+        </a>
+
+        <a href="/detective/suspects" class="btn">
+            View Suspects 👥
+        </a>
+
     </div>
+
 </div>
-
-<h1>🕵️ The Missing Cricket Bat</h1>
-
-<p>
-One day before the school final, the captain's lucky cricket bat disappeared from the sports room.
-</p>
-
-<a href="/detective/clues">
-    <button>Show Clues 🔍</button>
-</a>
-
-<a href="/detective/suspects">
-    <button>View Suspects</button>
-</a>
 
 </body>
 </html>
