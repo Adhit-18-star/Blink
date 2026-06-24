@@ -34,6 +34,7 @@ def init_db():
     conn = get_conn()
     cur = conn.cursor()
 
+    # Users
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users(
             id SERIAL PRIMARY KEY,
@@ -42,6 +43,7 @@ def init_db():
         )
     """)
 
+    # Friends
     cur.execute("""
         CREATE TABLE IF NOT EXISTS friends(
             id SERIAL PRIMARY KEY,
@@ -51,19 +53,28 @@ def init_db():
         )
     """)
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS messages(
-        id SERIAL PRIMARY KEY,
-        sender TEXT,
-        receiver TEXT,
-        message TEXT,
-        timestamp TEXT
-    )""")
-    
+    # Messages
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS messages(
+            id SERIAL PRIMARY KEY,
+            sender TEXT,
+            receiver TEXT,
+            message TEXT,
+            timestamp TEXT
+        )
+    """)
+
+    # Safe migration
     try:
-        cur.execute("ALTER TABLE messages ADD COLUMN timestamp TEXT")
-    except:
-        pass
-    
+        cur.execute("""
+            ALTER TABLE messages
+            ADD COLUMN IF NOT EXISTS timestamp TEXT
+        """)
+    except Exception as e:
+        print("Timestamp column check:", e)
+        conn.rollback()
+
+    # Detective Cases
     cur.execute("""
         CREATE TABLE IF NOT EXISTS detective_cases(
             id SERIAL PRIMARY KEY,
@@ -75,17 +86,20 @@ def init_db():
             difficulty TEXT,
             xp INTEGER
         )
-        """)
+    """)
+
+    # Detective Progress
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS detective_progress(
-        id SERIAL PRIMARY KEY,
-        username TEXT,
-        case_id INTEGER,
-        xp INTEGER
-    )
+        CREATE TABLE IF NOT EXISTS detective_progress(
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            case_id INTEGER,
+            xp INTEGER
+        )
     """)
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
