@@ -698,3 +698,33 @@ def detective(request: Request):
             "cases": cases
         }
     )
+    
+@app.get("/case/{case_id}", response_class=HTMLResponse)
+def play_case(request: Request, case_id: int):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, title, story, clues
+        FROM detective_cases
+        WHERE id=%s
+    """, (case_id,))
+
+    case = cur.fetchone()
+
+    conn.close()
+
+    if not case:
+        return HTMLResponse("Case not found", status_code=404)
+
+    clues = case[3].split("|")
+
+    return templates.TemplateResponse(
+        "case.html",
+        {
+            "request": request,
+            "case": case,
+            "clues": clues
+        }
+    )

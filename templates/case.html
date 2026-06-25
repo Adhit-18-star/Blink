@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ case[1] }}</title>
+</head>
+<body style="background:#071426;color:white;font-family:Arial;margin:0;">
+
+<div style="background:#0f1f38;padding:15px 25px;">
+    <h2>🚀 Blink</h2>
+</div>
+
+<div style="max-width:900px;margin:auto;padding:30px;">
+
+    <div style="background:#0f1f38;border:1px solid #334155;border-radius:15px;padding:20px;">
+
+        <h1>{{ case[1] }}</h1>
+
+        <p>{{ case[2] }}</p>
+
+        <h2>🔍 Clues</h2>
+
+        {% for clue in clues %}
+            <p>• {{ clue }}</p>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

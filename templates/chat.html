@@ -77,6 +77,18 @@
         color:#94a3b8;
         margin-top:5px;
     }
+
+    .my-msg{
+        background:#2563eb;
+        margin-left:auto;
+        max-width:70%;
+    }
+
+    .friend-msg{
+        background:#334155;
+        margin-right:auto;
+        max-width:70%;
+    }
 </style>
 ```
 
@@ -123,7 +135,7 @@ function showNotification(sender, text) {
 ```
 {% for id, sender, msg, timestamp in messages %}
 
-    <div class="msg">
+    <div class="msg {% if sender == username %}my-msg{% else %}friend-msg{% endif %}">
 
         <div class="sender">{{ sender }}</div>
 
