@@ -626,30 +626,127 @@ def detective_result(
         }
     )
     
-@app.get("/add-case")
-def add_case():
+@app.get("/add-all-cases")
+def add_all_cases():
+
+    cases = [
+
+    (
+    "The Missing Trophy",
+    "The school trophy disappeared one day before Sports Day.",
+    "A muddy footprint was found near the trophy room|Rahul was seen near the room after school|The room was locked with a key",
+    "Rahul|Watchman Suresh|Coach Ravi",
+    "Rahul",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Lost Science Project",
+    "A science project vanished before the exhibition.",
+    "A bottle of glue was left behind|A student saw Priya carrying a large box|The project was found in Class 8B",
+    "Priya|Amit|Teacher Meera",
+    "Priya",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Vanished Homework",
+    "A notebook containing homework disappeared.",
+    "The notebook was last seen on a desk|Rohan sat at that desk after lunch|The notebook was found in Rohan's bag",
+    "Rohan|Karan|Sneha",
+    "Rohan",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Missing Library Book",
+    "A popular library book disappeared.",
+    "The last borrower was Anjali|The book was found under Anjali's desk|No one else borrowed it",
+    "Anjali|Librarian|Ritesh",
+    "Anjali",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Stolen Football",
+    "The football used for practice went missing.",
+    "Vikas was playing with it last|The ball was found in Vikas's garage|No one else took it home",
+    "Vikas|Coach Ravi|Arjun",
+    "Vikas",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Broken Classroom Clock",
+    "The classroom clock was broken during recess.",
+    "A cricket ball hit the wall|Sameer was playing cricket nearby|The ball belonged to Sameer",
+    "Sameer|Rohit|Watchman",
+    "Sameer",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Missing Exam Papers",
+    "A stack of practice exam papers disappeared.",
+    "Neha wanted extra copies|Papers were found in Neha's locker|No signs of forced entry",
+    "Neha|Teacher Meera|Aman",
+    "Neha",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Lost Art Painting",
+    "A painting prepared for the art competition vanished.",
+    "Paint stains were found on Kunal's hands|Kunal carried a drawing tube home|The painting was inside the tube",
+    "Kunal|Riya|Art Teacher",
+    "Kunal",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Mystery of the Empty Lunch Box",
+    "A student's lunch disappeared.",
+    "Food crumbs were found near Ajay's seat|Ajay skipped bringing lunch that day|Ajay admitted eating it",
+    "Ajay|Rohan|Sneha",
+    "Ajay",
+    "Easy",
+    10
+    ),
+
+    (
+    "The Missing Cricket Cap",
+    "The captain's cricket cap disappeared before the match.",
+    "The cap was last seen in the locker room|Manav was changing there after practice|The cap was found in Manav's bag",
+    "Manav|Coach Ravi|Watchman Suresh",
+    "Manav",
+    "Easy",
+    10
+    )
+
+    ]
 
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("""
-        INSERT INTO detective_cases
-        (title, story, clues, suspects, culprit, difficulty, xp)
-        VALUES (%s,%s,%s,%s,%s,%s,%s)
-    """, (
-        "The Missing Cricket Bat",
-        "One day before the school final, the captain's lucky cricket bat disappeared.",
-        "Muddy shoe prints|Watchman has keys|Arjun practiced on muddy ground",
-        "Arjun|Watchman Suresh|Coach Ravi",
-        "Arjun",
-        "Easy",
-        10
-    ))
+    for case in cases:
+        cur.execute("""
+            INSERT INTO detective_cases
+            (title, story, clues, suspects, culprit, difficulty, xp)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, case)
 
     conn.commit()
     conn.close()
 
-    return {"message":"Case added"}
+    return {"message": "All cases added"}
 
 @app.get("/detective")
 def detective_cases(request: Request):
