@@ -763,12 +763,24 @@ def accuse(
         cur = conn.cursor()
 
         cur.execute("""
-            INSERT INTO detective_progress
-            (username, case_id, xp)
-            VALUES (%s,%s,%s)
-        """, (username, case_id, xp))
+            SELECT id
+            FROM detective_progress
+            WHERE username=%s
+            AND case_id=%s
+        """, (username, case_id))
 
-        conn.commit()
+        already_done = cur.fetchone()
+
+        if not already_done:
+
+            cur.execute("""
+                INSERT INTO detective_progress
+                (username, case_id, xp)
+                VALUES (%s,%s,%s)
+            """, (username, case_id, xp))
+
+            conn.commit()
+
         conn.close()
 
     return templates.TemplateResponse(
