@@ -890,7 +890,26 @@ def accuse(
             "xp": xp
         }
     )
-    
+
+
+@app.get("/reset-detective-xp")
+def reset_detective_xp(request: Request):
+
+    username = request.session.get("username")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM detective_progress
+        WHERE username=%s
+    """, (username,))
+
+    conn.commit()
+    conn.close()
+
+    return {"message": "XP reset"}
+
 @app.get("/detective-profile")
 def detective_profile(request: Request):
 
@@ -905,10 +924,27 @@ def detective_profile(request: Request):
         WHERE username=%s
     """, (username,))
 
-    total_xp = cur.fetchone()[0]
+    xp = cur.fetchone()[0]
 
     conn.close()
 
+    if xp >= 1000:
+        level = "Legend Detective"
+    elif xp >= 600:
+        level = "Master Detective"
+    elif xp >= 350:
+        level = "Expert Detective"
+    elif xp >= 200:
+        level = "Senior Detective"
+    elif xp >= 100:
+        level = "School Detective"
+    elif xp >= 50:
+        level = "Junior Detective"
+    else:
+        level = "Rookie Detective"
+
     return {
-        "xp": total_xp
+        "username": username,
+        "xp": xp,
+        "level": level
     }
