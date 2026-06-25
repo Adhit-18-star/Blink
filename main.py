@@ -92,7 +92,7 @@ def init_db():
             suspects TEXT,
             culprit TEXT,
             difficulty TEXT,
-            xp INTEGER
+            xp INTEGER,
             required_xp INTEGER DEFAULT 0
         )
     """)
