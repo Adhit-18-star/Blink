@@ -73,6 +73,14 @@ def init_db():
     except Exception as e:
         print("Timestamp column check:", e)
         conn.rollback()
+        
+    try:
+        cur.execute("""
+            ALTER TABLE detective_cases
+            ADD COLUMN IF NOT EXISTS required_xp INTEGER DEFAULT 0
+        """)
+    except:
+        conn.rollback()
 
     # Detective Cases
     cur.execute("""
@@ -85,6 +93,7 @@ def init_db():
             culprit TEXT,
             difficulty TEXT,
             xp INTEGER
+            required_xp INTEGER DEFAULT 0
         )
     """)
 
@@ -775,11 +784,23 @@ def detective_cases(request: Request):
 @app.get("/detective", response_class=HTMLResponse)
 def detective(request: Request):
 
+    username = request.session.get("username")
+
     conn = get_conn()
     cur = conn.cursor()
 
+    # User XP
     cur.execute("""
-        SELECT id, title, difficulty, xp
+        SELECT COALESCE(SUM(xp),0)
+        FROM detective_progress
+        WHERE username=%s
+    """, (username,))
+
+    user_xp = cur.fetchone()[0]
+
+    # Cases
+    cur.execute("""
+        SELECT id, title, difficulty, xp, required_xp
         FROM detective_cases
         ORDER BY id
     """)
@@ -792,7 +813,8 @@ def detective(request: Request):
         "detective_cases.html",
         {
             "request": request,
-            "cases": cases
+            "cases": cases,
+            "user_xp": user_xp
         }
     )
     
@@ -910,7 +932,7 @@ def reset_detective_xp(request: Request):
 
     return {"message": "XP reset"}
 
-@app.get("/detective-profile")
+@app.get("/detective-profile", response_class=HTMLResponse)
 def detective_profile(request: Request):
 
     username = request.session.get("username")
@@ -930,21 +952,52 @@ def detective_profile(request: Request):
 
     if xp >= 1000:
         level = "Legend Detective"
+        next_xp = 1000
     elif xp >= 600:
         level = "Master Detective"
+        next_xp = 1000
     elif xp >= 350:
         level = "Expert Detective"
+        next_xp = 600
     elif xp >= 200:
         level = "Senior Detective"
+        next_xp = 350
     elif xp >= 100:
         level = "School Detective"
+        next_xp = 200
     elif xp >= 50:
         level = "Junior Detective"
+        next_xp = 100
     else:
         level = "Rookie Detective"
+        next_xp = 50
 
-    return {
-        "username": username,
-        "xp": xp,
-        "level": level
-    }
+    progress = min(int((xp / next_xp) * 100), 100)
+
+    return templates.TemplateResponse(
+        "detective_profile.html",
+        {
+            "request": request,
+            "username": username,
+            "xp": xp,
+            "level": level,
+            "progress": progress,
+            "next_xp": next_xp
+        }
+    )
+    
+@app.get("/setup-case-xp")
+def setup_case_xp():
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE detective_cases
+        SET required_xp = (id - 1) * 10
+    """)
+
+    conn.commit()
+    conn.close()
+
+    return {"message":"XP requirements added"}
