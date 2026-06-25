@@ -23,6 +23,14 @@
             <p>• {{ clue }}</p>
         {% endfor %}
 
+        <h2>👥 Suspects</h2>
+
+        {% for suspect in suspects %}
+            <div style="background:#071426;padding:12px;border-radius:10px;margin-bottom:10px;">
+                {{ suspect }}
+            </div>
+        {% endfor %}
+
     </div>
 
 </div>

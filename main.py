@@ -706,7 +706,7 @@ def play_case(request: Request, case_id: int):
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, title, story, clues
+        SELECT id, title, story, clues, suspects
         FROM detective_cases
         WHERE id=%s
     """, (case_id,))
@@ -718,6 +718,7 @@ def play_case(request: Request, case_id: int):
     if not case:
         return HTMLResponse("Case not found", status_code=404)
 
+    suspects = case[4].split("|")
     clues = case[3].split("|")
 
     return templates.TemplateResponse(
@@ -725,6 +726,7 @@ def play_case(request: Request, case_id: int):
         {
             "request": request,
             "case": case,
-            "clues": clues
+            "clues": clues,
+            "suspects": suspects
         }
     )

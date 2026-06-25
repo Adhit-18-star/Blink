@@ -116,6 +116,15 @@ function showNotification(sender, text) {
 }
 </script>
 
+<script>
+function scrollToBottom() {
+    const box = document.querySelector(".chat-box");
+    box.scrollTop = box.scrollHeight;
+}
+
+scrollToBottom();
+</script>
+
 <body>
 
 <h2>Chat with {{ friend }}</h2>
@@ -210,6 +219,7 @@ async function loadMessages() {
     if (newMessages && currentMessages) {
         currentMessages.innerHTML = newMessages.innerHTML;
     }
+    scrollToBottom();
 }
 
 setInterval(loadMessages, 2000);
