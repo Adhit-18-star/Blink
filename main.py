@@ -755,6 +755,21 @@ def accuse(
     xp = data[1]
 
     won = suspect == culprit
+    
+    if won:
+        username = request.session.get("username")
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO detective_progress
+            (username, case_id, xp)
+            VALUES (%s,%s,%s)
+        """, (username, case_id, xp))
+
+        conn.commit()
+        conn.close()
 
     return templates.TemplateResponse(
         "case_result.html",
@@ -766,3 +781,25 @@ def accuse(
             "xp": xp
         }
     )
+    
+@app.get("/detective-profile")
+def detective_profile(request: Request):
+
+    username = request.session.get("username")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT COALESCE(SUM(xp),0)
+        FROM detective_progress
+        WHERE username=%s
+    """, (username,))
+
+    total_xp = cur.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "xp": total_xp
+    }
