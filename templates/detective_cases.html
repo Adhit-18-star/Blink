@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detective Cases - Blink</title>
+
+    <style>
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#071426;
+            color:white;
+        }
+
+        .navbar{
+            background:#0f1f38;
+            padding:15px 25px;
+        }
+
+        .logo{
+            font-size:24px;
+            font-weight:bold;
+        }
+
+        .container{
+            max-width:900px;
+            margin:auto;
+            padding:30px;
+        }
+
+        .case-card{
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:15px;
+            padding:20px;
+            margin-bottom:15px;
+        }
+
+        .btn{
+            background:#1e5eff;
+            color:white;
+            text-decoration:none;
+            padding:10px 18px;
+            border-radius:10px;
+            display:inline-block;
+            margin-top:10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🚀 Blink</div>
+</div>
+
+<div class="container">
+
+    <h1>🕵️ Detective Cases</h1>
+
+    {% for case in cases %}
+
+    <div class="case-card">
+
+        <h2>{{ case[1] }}</h2>
+
+        <p>⭐ {{ case[2] }}</p>
+
+        <p>🏆 {{ case[3] }} XP</p>
+
+        <a href="/case/{{ case[0] }}" class="btn">
+            Play Case
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+</body>
+</html>

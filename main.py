@@ -579,16 +579,6 @@ def test_users():
     conn.close()
 
     return users
-
-@app.get("/detective", response_class=HTMLResponse)
-def detective(request: Request):
-
-    return templates.TemplateResponse(
-        "detective.html",
-        {
-            "request": request
-        }
-    )
     
 @app.get("/detective/clues", response_class=HTMLResponse)
 def detective_clues(request: Request):
@@ -669,6 +659,30 @@ def detective_cases(request: Request):
 
     cur.execute("""
         SELECT id,title,difficulty,xp
+        FROM detective_cases
+        ORDER BY id
+    """)
+
+    cases = cur.fetchall()
+
+    conn.close()
+
+    return templates.TemplateResponse(
+        "detective_cases.html",
+        {
+            "request": request,
+            "cases": cases
+        }
+    )
+    
+@app.get("/detective", response_class=HTMLResponse)
+def detective(request: Request):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, title, difficulty, xp
         FROM detective_cases
         ORDER BY id
     """)
