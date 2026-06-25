@@ -730,3 +730,39 @@ def play_case(request: Request, case_id: int):
             "suspects": suspects
         }
     )
+    
+@app.post("/accuse/{case_id}", response_class=HTMLResponse)
+def accuse(
+    request: Request,
+    case_id: int,
+    suspect: str = Form(...)
+):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT culprit, xp
+        FROM detective_cases
+        WHERE id=%s
+    """, (case_id,))
+
+    data = cur.fetchone()
+
+    conn.close()
+
+    culprit = data[0]
+    xp = data[1]
+
+    won = suspect == culprit
+
+    return templates.TemplateResponse(
+        "case_result.html",
+        {
+            "request": request,
+            "won": won,
+            "suspect": suspect,
+            "culprit": culprit,
+            "xp": xp
+        }
+    )

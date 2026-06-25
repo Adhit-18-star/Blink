@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>{{ case[1] }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="background:#071426;color:white;font-family:Arial;margin:0;">
 
@@ -25,11 +26,27 @@
 
         <h2>👥 Suspects</h2>
 
-        {% for suspect in suspects %}
-            <div style="background:#071426;padding:12px;border-radius:10px;margin-bottom:10px;">
-                {{ suspect }}
-            </div>
-        {% endfor %}
+        <form action="/accuse/{{ case[0] }}" method="post">
+
+            {% for suspect in suspects %}
+
+                <div style="background:#071426;padding:12px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+
+                    <span>{{ suspect }}</span>
+
+                    <button
+                        type="submit"
+                        name="suspect"
+                        value="{{ suspect }}"
+                        style="background:#1e5eff;color:white;border:none;padding:10px 15px;border-radius:10px;cursor:pointer;">
+                        Accuse
+                    </button>
+
+                </div>
+
+            {% endfor %}
+
+        </form>
 
     </div>
 

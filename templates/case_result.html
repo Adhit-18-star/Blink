@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="background:#071426;color:white;font-family:Arial;margin:0;">
+
+<div style="background:#0f1f38;padding:15px 25px;">
+    <h2>🚀 Blink</h2>
+</div>
+
+<div style="max-width:900px;margin:auto;padding:30px;">
+
+    <div style="background:#0f1f38;border:1px solid #334155;border-radius:15px;padding:25px;">
+
+        {% if won %}
+
+            <h1>🎉 Correct!</h1>
+
+            <p>You solved the mystery.</p>
+
+            <p>🏆 XP Earned: {{ xp }}</p>
+
+        {% else %}
+
+            <h1>❌ Wrong Guess</h1>
+
+            <p>You accused: {{ suspect }}</p>
+
+            <p>Correct culprit: {{ culprit }}</p>
+
+        {% endif %}
+
+        <br>
+
+        <a href="/detective"
+           style="background:#1e5eff;color:white;text-decoration:none;padding:10px 15px;border-radius:10px;">
+           Back To Cases
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
