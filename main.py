@@ -756,30 +756,6 @@ def add_all_cases():
     conn.close()
 
     return {"message": "All cases added"}
-
-@app.get("/detective")
-def detective_cases(request: Request):
-
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id,title,difficulty,xp
-        FROM detective_cases
-        ORDER BY id
-    """)
-
-    cases = cur.fetchall()
-
-    conn.close()
-
-    return templates.TemplateResponse(
-        "detective_cases.html",
-        {
-            "request": request,
-            "cases": cases
-        }
-    )
     
 @app.get("/detective", response_class=HTMLResponse)
 def detective(request: Request):
