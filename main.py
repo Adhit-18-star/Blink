@@ -814,7 +814,7 @@ def detective(request: Request):
         {
             "request": request,
             "cases": cases,
-            "user_xp": user_xp
+            "user_xp": user_xp   # 👈 THIS MUST EXIST
         }
     )
     
