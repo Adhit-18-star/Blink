@@ -542,438 +542,438 @@ def debug_users_page(request: Request):
         "users": data
     }
     
-@app.get("/search-users")
-def search_users(request: Request, q: str = ""):
-    username = request.session.get("username")
+# @app.get("/search-users")
+# def search_users(request: Request, q: str = ""):
+#     username = request.session.get("username")
 
-    if not username:
-        return {"error": "not logged in"}
+#     if not username:
+#         return {"error": "not logged in"}
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT
-            u.username,
-            CASE
-                WHEN f.id IS NOT NULL THEN 'sent'
-                ELSE 'none'
-            END AS request_status
-        FROM users u
-        LEFT JOIN friends f
-            ON f.sender = %s
-            AND f.receiver = u.username
-        WHERE u.username ILIKE %s
-        AND u.username != %s
-        ORDER BY u.username
-    """, (username, f"%{q}%", username))
+#     cur.execute("""
+#         SELECT
+#             u.username,
+#             CASE
+#                 WHEN f.id IS NOT NULL THEN 'sent'
+#                 ELSE 'none'
+#             END AS request_status
+#         FROM users u
+#         LEFT JOIN friends f
+#             ON f.sender = %s
+#             AND f.receiver = u.username
+#         WHERE u.username ILIKE %s
+#         AND u.username != %s
+#         ORDER BY u.username
+#     """, (username, f"%{q}%", username))
 
-    users = cur.fetchall()
+#     users = cur.fetchall()
 
-    cur.close()
-    conn.close()
+#     cur.close()
+#     conn.close()
 
-    return {"users": users}
+#     return {"users": users}
 
-@app.get("/test-users")
-def test_users():
-    conn = get_conn()
-    cur = conn.cursor()
+# @app.get("/test-users")
+# def test_users():
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("SELECT username FROM users")
+#     cur.execute("SELECT username FROM users")
 
-    users = cur.fetchall()
+#     users = cur.fetchall()
 
-    cur.close()
-    conn.close()
+#     cur.close()
+#     conn.close()
 
-    return users
+#     return users
     
-@app.get("/detective/clues", response_class=HTMLResponse)
-def detective_clues(request: Request):
+# @app.get("/detective/clues", response_class=HTMLResponse)
+# def detective_clues(request: Request):
 
-    clues = [
-        "Muddy shoe prints near the sports room",
-        "Watchman has keys",
-        "Arjun practiced on muddy ground",
-        "Coach left school at 5 PM"
-    ]
+#     clues = [
+#         "Muddy shoe prints near the sports room",
+#         "Watchman has keys",
+#         "Arjun practiced on muddy ground",
+#         "Coach left school at 5 PM"
+#     ]
 
-    return templates.TemplateResponse(
-        "clues.html",
-        {
-            "request": request,
-            "clues": clues
-        }
-    )
+#     return templates.TemplateResponse(
+#         "clues.html",
+#         {
+#             "request": request,
+#             "clues": clues
+#         }
+#     )
     
-@app.get("/detective/suspects", response_class=HTMLResponse)
-def detective_suspects(request: Request):
+# @app.get("/detective/suspects", response_class=HTMLResponse)
+# def detective_suspects(request: Request):
 
-    return templates.TemplateResponse(
-        "suspects.html",
-        {
-            "request": request
-        }
-    )
+#     return templates.TemplateResponse(
+#         "suspects.html",
+#         {
+#             "request": request
+#         }
+#     )
     
-@app.post("/detective/result", response_class=HTMLResponse)
-def detective_result(
-    request: Request,
-    suspect: str = Form(...)
-):
+# @app.post("/detective/result", response_class=HTMLResponse)
+# def detective_result(
+#     request: Request,
+#     suspect: str = Form(...)
+# ):
 
-    correct = "Arjun"
+#     correct = "Arjun"
 
-    return templates.TemplateResponse(
-        "results.html",
-        {
-            "request": request,
-            "suspect": suspect,
-            "correct": correct,
-            "won": suspect == correct
-        }
-    )
+#     return templates.TemplateResponse(
+#         "results.html",
+#         {
+#             "request": request,
+#             "suspect": suspect,
+#             "correct": correct,
+#             "won": suspect == correct
+#         }
+#     )
     
-@app.get("/add-all-cases")
-def add_all_cases():
+# @app.get("/add-all-cases")
+# def add_all_cases():
 
-    cases = [
+#     cases = [
 
-    (
-    "The Missing Trophy",
-    "The school trophy disappeared one day before Sports Day.",
-    "A muddy footprint was found near the trophy room|Rahul was seen near the room after school|The room was locked with a key",
-    "Rahul|Watchman Suresh|Coach Ravi",
-    "Rahul",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Missing Trophy",
+#     "The school trophy disappeared one day before Sports Day.",
+#     "A muddy footprint was found near the trophy room|Rahul was seen near the room after school|The room was locked with a key",
+#     "Rahul|Watchman Suresh|Coach Ravi",
+#     "Rahul",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Lost Science Project",
-    "A science project vanished before the exhibition.",
-    "A bottle of glue was left behind|A student saw Priya carrying a large box|The project was found in Class 8B",
-    "Priya|Amit|Teacher Meera",
-    "Priya",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Lost Science Project",
+#     "A science project vanished before the exhibition.",
+#     "A bottle of glue was left behind|A student saw Priya carrying a large box|The project was found in Class 8B",
+#     "Priya|Amit|Teacher Meera",
+#     "Priya",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Vanished Homework",
-    "A notebook containing homework disappeared.",
-    "The notebook was last seen on a desk|Rohan sat at that desk after lunch|The notebook was found in Rohan's bag",
-    "Rohan|Karan|Sneha",
-    "Rohan",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Vanished Homework",
+#     "A notebook containing homework disappeared.",
+#     "The notebook was last seen on a desk|Rohan sat at that desk after lunch|The notebook was found in Rohan's bag",
+#     "Rohan|Karan|Sneha",
+#     "Rohan",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Missing Library Book",
-    "A popular library book disappeared.",
-    "The last borrower was Anjali|The book was found under Anjali's desk|No one else borrowed it",
-    "Anjali|Librarian|Ritesh",
-    "Anjali",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Missing Library Book",
+#     "A popular library book disappeared.",
+#     "The last borrower was Anjali|The book was found under Anjali's desk|No one else borrowed it",
+#     "Anjali|Librarian|Ritesh",
+#     "Anjali",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Stolen Football",
-    "The football used for practice went missing.",
-    "Vikas was playing with it last|The ball was found in Vikas's garage|No one else took it home",
-    "Vikas|Coach Ravi|Arjun",
-    "Vikas",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Stolen Football",
+#     "The football used for practice went missing.",
+#     "Vikas was playing with it last|The ball was found in Vikas's garage|No one else took it home",
+#     "Vikas|Coach Ravi|Arjun",
+#     "Vikas",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Broken Classroom Clock",
-    "The classroom clock was broken during recess.",
-    "A cricket ball hit the wall|Sameer was playing cricket nearby|The ball belonged to Sameer",
-    "Sameer|Rohit|Watchman",
-    "Sameer",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Broken Classroom Clock",
+#     "The classroom clock was broken during recess.",
+#     "A cricket ball hit the wall|Sameer was playing cricket nearby|The ball belonged to Sameer",
+#     "Sameer|Rohit|Watchman",
+#     "Sameer",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Missing Exam Papers",
-    "A stack of practice exam papers disappeared.",
-    "Neha wanted extra copies|Papers were found in Neha's locker|No signs of forced entry",
-    "Neha|Teacher Meera|Aman",
-    "Neha",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Missing Exam Papers",
+#     "A stack of practice exam papers disappeared.",
+#     "Neha wanted extra copies|Papers were found in Neha's locker|No signs of forced entry",
+#     "Neha|Teacher Meera|Aman",
+#     "Neha",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Lost Art Painting",
-    "A painting prepared for the art competition vanished.",
-    "Paint stains were found on Kunal's hands|Kunal carried a drawing tube home|The painting was inside the tube",
-    "Kunal|Riya|Art Teacher",
-    "Kunal",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Lost Art Painting",
+#     "A painting prepared for the art competition vanished.",
+#     "Paint stains were found on Kunal's hands|Kunal carried a drawing tube home|The painting was inside the tube",
+#     "Kunal|Riya|Art Teacher",
+#     "Kunal",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Mystery of the Empty Lunch Box",
-    "A student's lunch disappeared.",
-    "Food crumbs were found near Ajay's seat|Ajay skipped bringing lunch that day|Ajay admitted eating it",
-    "Ajay|Rohan|Sneha",
-    "Ajay",
-    "Easy",
-    10
-    ),
+#     (
+#     "The Mystery of the Empty Lunch Box",
+#     "A student's lunch disappeared.",
+#     "Food crumbs were found near Ajay's seat|Ajay skipped bringing lunch that day|Ajay admitted eating it",
+#     "Ajay|Rohan|Sneha",
+#     "Ajay",
+#     "Easy",
+#     10
+#     ),
 
-    (
-    "The Missing Cricket Cap",
-    "The captain's cricket cap disappeared before the match.",
-    "The cap was last seen in the locker room|Manav was changing there after practice|The cap was found in Manav's bag",
-    "Manav|Coach Ravi|Watchman Suresh",
-    "Manav",
-    "Easy",
-    10
-    )
+#     (
+#     "The Missing Cricket Cap",
+#     "The captain's cricket cap disappeared before the match.",
+#     "The cap was last seen in the locker room|Manav was changing there after practice|The cap was found in Manav's bag",
+#     "Manav|Coach Ravi|Watchman Suresh",
+#     "Manav",
+#     "Easy",
+#     10
+#     )
 
-    ]
+#     ]
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    for case in cases:
-        cur.execute("""
-            INSERT INTO detective_cases
-            (title, story, clues, suspects, culprit, difficulty, xp)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, case)
+#     for case in cases:
+#         cur.execute("""
+#             INSERT INTO detective_cases
+#             (title, story, clues, suspects, culprit, difficulty, xp)
+#             VALUES (%s, %s, %s, %s, %s, %s, %s)
+#         """, case)
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return {"message": "All cases added"}
+#     return {"message": "All cases added"}
     
-@app.get("/detective", response_class=HTMLResponse)
-def detective(request: Request):
+# @app.get("/detective", response_class=HTMLResponse)
+# def detective(request: Request):
 
-    username = request.session.get("username")
+#     username = request.session.get("username")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    # User XP
-    cur.execute("""
-        SELECT COALESCE(SUM(xp),0)
-        FROM detective_progress
-        WHERE username=%s
-    """, (username,))
+#     # User XP
+#     cur.execute("""
+#         SELECT COALESCE(SUM(xp),0)
+#         FROM detective_progress
+#         WHERE username=%s
+#     """, (username,))
 
-    user_xp = cur.fetchone()[0]
+#     user_xp = cur.fetchone()[0]
 
-    # Cases
-    cur.execute("""
-        SELECT id, title, difficulty, xp, required_xp
-        FROM detective_cases
-        ORDER BY id
-    """)
+#     # Cases
+#     cur.execute("""
+#         SELECT id, title, difficulty, xp, required_xp
+#         FROM detective_cases
+#         ORDER BY id
+#     """)
 
-    cases = cur.fetchall()
+#     cases = cur.fetchall()
 
-    conn.close()
+#     conn.close()
 
-    return templates.TemplateResponse(
-        "detective_cases.html",
-        {
-            "request": request,
-            "cases": cases,
-            "user_xp": user_xp   # 👈 THIS MUST EXIST
-        }
-    )
+#     return templates.TemplateResponse(
+#         "detective_cases.html",
+#         {
+#             "request": request,
+#             "cases": cases,
+#             "user_xp": user_xp   # 👈 THIS MUST EXIST
+#         }
+#     )
     
-@app.get("/case/{case_id}", response_class=HTMLResponse)
-def play_case(request: Request, case_id: int):
+# @app.get("/case/{case_id}", response_class=HTMLResponse)
+# def play_case(request: Request, case_id: int):
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT id, title, story, clues, suspects
-        FROM detective_cases
-        WHERE id=%s
-    """, (case_id,))
+#     cur.execute("""
+#         SELECT id, title, story, clues, suspects
+#         FROM detective_cases
+#         WHERE id=%s
+#     """, (case_id,))
 
-    case = cur.fetchone()
+#     case = cur.fetchone()
 
-    conn.close()
+#     conn.close()
 
-    if not case:
-        return HTMLResponse("Case not found", status_code=404)
+#     if not case:
+#         return HTMLResponse("Case not found", status_code=404)
 
-    suspects = case[4].split("|")
-    clues = case[3].split("|")
+#     suspects = case[4].split("|")
+#     clues = case[3].split("|")
 
-    return templates.TemplateResponse(
-        "case.html",
-        {
-            "request": request,
-            "case": case,
-            "clues": clues,
-            "suspects": suspects
-        }
-    )
+#     return templates.TemplateResponse(
+#         "case.html",
+#         {
+#             "request": request,
+#             "case": case,
+#             "clues": clues,
+#             "suspects": suspects
+#         }
+#     )
     
-@app.post("/accuse/{case_id}", response_class=HTMLResponse)
-def accuse(
-    request: Request,
-    case_id: int,
-    suspect: str = Form(...)
-):
+# @app.post("/accuse/{case_id}", response_class=HTMLResponse)
+# def accuse(
+#     request: Request,
+#     case_id: int,
+#     suspect: str = Form(...)
+# ):
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT culprit, xp
-        FROM detective_cases
-        WHERE id=%s
-    """, (case_id,))
+#     cur.execute("""
+#         SELECT culprit, xp
+#         FROM detective_cases
+#         WHERE id=%s
+#     """, (case_id,))
 
-    data = cur.fetchone()
+#     data = cur.fetchone()
 
-    conn.close()
+#     conn.close()
 
-    culprit = data[0]
-    xp = data[1]
+#     culprit = data[0]
+#     xp = data[1]
 
-    won = suspect == culprit
+#     won = suspect == culprit
     
-    if won:
-        username = request.session.get("username")
+#     if won:
+#         username = request.session.get("username")
 
-        conn = get_conn()
-        cur = conn.cursor()
+#         conn = get_conn()
+#         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT id
-            FROM detective_progress
-            WHERE username=%s
-            AND case_id=%s
-        """, (username, case_id))
+#         cur.execute("""
+#             SELECT id
+#             FROM detective_progress
+#             WHERE username=%s
+#             AND case_id=%s
+#         """, (username, case_id))
 
-        already_done = cur.fetchone()
+#         already_done = cur.fetchone()
 
-        if not already_done:
+#         if not already_done:
 
-            cur.execute("""
-                INSERT INTO detective_progress
-                (username, case_id, xp)
-                VALUES (%s,%s,%s)
-            """, (username, case_id, xp))
+#             cur.execute("""
+#                 INSERT INTO detective_progress
+#                 (username, case_id, xp)
+#                 VALUES (%s,%s,%s)
+#             """, (username, case_id, xp))
 
-            conn.commit()
+#             conn.commit()
 
-        conn.close()
+#         conn.close()
 
-    return templates.TemplateResponse(
-        "case_result.html",
-        {
-            "request": request,
-            "won": won,
-            "suspect": suspect,
-            "culprit": culprit,
-            "xp": xp
-        }
-    )
+#     return templates.TemplateResponse(
+#         "case_result.html",
+#         {
+#             "request": request,
+#             "won": won,
+#             "suspect": suspect,
+#             "culprit": culprit,
+#             "xp": xp
+#         }
+#     )
 
 
-@app.get("/reset-detective-xp")
-def reset_detective_xp(request: Request):
+# @app.get("/reset-detective-xp")
+# def reset_detective_xp(request: Request):
 
-    username = request.session.get("username")
+#     username = request.session.get("username")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        DELETE FROM detective_progress
-        WHERE username=%s
-    """, (username,))
+#     cur.execute("""
+#         DELETE FROM detective_progress
+#         WHERE username=%s
+#     """, (username,))
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return {"message": "XP reset"}
+#     return {"message": "XP reset"}
 
-@app.get("/detective-profile", response_class=HTMLResponse)
-def detective_profile(request: Request):
+# @app.get("/detective-profile", response_class=HTMLResponse)
+# def detective_profile(request: Request):
 
-    username = request.session.get("username")
+#     username = request.session.get("username")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT COALESCE(SUM(xp),0)
-        FROM detective_progress
-        WHERE username=%s
-    """, (username,))
+#     cur.execute("""
+#         SELECT COALESCE(SUM(xp),0)
+#         FROM detective_progress
+#         WHERE username=%s
+#     """, (username,))
 
-    xp = cur.fetchone()[0]
+#     xp = cur.fetchone()[0]
 
-    conn.close()
+#     conn.close()
 
-    if xp >= 1000:
-        level = "Legend Detective"
-        next_xp = 1000
-    elif xp >= 600:
-        level = "Master Detective"
-        next_xp = 1000
-    elif xp >= 350:
-        level = "Expert Detective"
-        next_xp = 600
-    elif xp >= 200:
-        level = "Senior Detective"
-        next_xp = 350
-    elif xp >= 100:
-        level = "School Detective"
-        next_xp = 200
-    elif xp >= 50:
-        level = "Junior Detective"
-        next_xp = 100
-    else:
-        level = "Rookie Detective"
-        next_xp = 50
+#     if xp >= 1000:
+#         level = "Legend Detective"
+#         next_xp = 1000
+#     elif xp >= 600:
+#         level = "Master Detective"
+#         next_xp = 1000
+#     elif xp >= 350:
+#         level = "Expert Detective"
+#         next_xp = 600
+#     elif xp >= 200:
+#         level = "Senior Detective"
+#         next_xp = 350
+#     elif xp >= 100:
+#         level = "School Detective"
+#         next_xp = 200
+#     elif xp >= 50:
+#         level = "Junior Detective"
+#         next_xp = 100
+#     else:
+#         level = "Rookie Detective"
+#         next_xp = 50
 
-    progress = min(int((xp / next_xp) * 100), 100)
+#     progress = min(int((xp / next_xp) * 100), 100)
 
-    return templates.TemplateResponse(
-        "detective_profile.html",
-        {
-            "request": request,
-            "username": username,
-            "xp": xp,
-            "level": level,
-            "progress": progress,
-            "next_xp": next_xp
-        }
-    )
+#     return templates.TemplateResponse(
+#         "detective_profile.html",
+#         {
+#             "request": request,
+#             "username": username,
+#             "xp": xp,
+#             "level": level,
+#             "progress": progress,
+#             "next_xp": next_xp
+#         }
+#     )
     
-@app.get("/setup-case-xp")
-def setup_case_xp():
+# @app.get("/setup-case-xp")
+# def setup_case_xp():
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        UPDATE detective_cases
-        SET required_xp = (id - 1) * 10
-    """)
+#     cur.execute("""
+#         UPDATE detective_cases
+#         SET required_xp = (id - 1) * 10
+#     """)
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return {"message":"XP requirements added"}
+#     return {"message":"XP requirements added"}
