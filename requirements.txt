@@ -1,9 +1,6 @@
-fastapi==0.136.3
-starlette==0.47.1
-jinja2==3.1.6
-uvicorn==0.35.0
+fastapi
+uvicorn
+psycopg2-binary
+jinja2
 python-multipart
 itsdangerous
-numpy
-opencv-python
-psycopg2-binary
