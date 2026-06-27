@@ -1,546 +1,554 @@
-from fastapi import FastAPI, Request, Form
-from fastapi import File, UploadFile
-from datetime import datetime
-from zoneinfo import ZoneInfo
-import os
-import base64
-import uuid
-from starlette.middleware.sessions import SessionMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-import psycopg2
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+from fastapi import FastAPI
 
 app = FastAPI()
 
-os.makedirs("uploads", exist_ok=True)
+@app.get("/")
+def home():
+    return {"status": "working"}
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# from fastapi import FastAPI, Request, Form
+# from fastapi import File, UploadFile
+# from datetime import datetime
+# from zoneinfo import ZoneInfo
+# import os
+# import base64
+# import uuid
+# from starlette.middleware.sessions import SessionMiddleware
+# from fastapi.responses import HTMLResponse, RedirectResponse
+# from fastapi.templating import Jinja2Templates
+# from fastapi.staticfiles import StaticFiles
+# import psycopg2
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# DATABASE_URL = os.getenv("DATABASE_URL")
 
-app.add_middleware(SessionMiddleware, secret_key="blink-secret-key")
+# def get_conn():
+#     return psycopg2.connect(DATABASE_URL)
 
-templates = Jinja2Templates(directory="templates")
+# app = FastAPI()
+
+# os.makedirs("uploads", exist_ok=True)
+
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# app.add_middleware(SessionMiddleware, secret_key="blink-secret-key")
+
+# templates = Jinja2Templates(directory="templates")
 
 
-# ---------------- DB ----------------
-def init_db():
-    conn = get_conn()
-    cur = conn.cursor()
+# # ---------------- DB ----------------
+# def init_db():
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    # Users
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users(
-            id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE,
-            password TEXT
-        )
-    """)
+#     # Users
+#     cur.execute("""
+#         CREATE TABLE IF NOT EXISTS users(
+#             id SERIAL PRIMARY KEY,
+#             username TEXT UNIQUE,
+#             password TEXT
+#         )
+#     """)
 
-    # Friends
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS friends(
-            id SERIAL PRIMARY KEY,
-            sender TEXT,
-            receiver TEXT,
-            status TEXT
-        )
-    """)
+#     # Friends
+#     cur.execute("""
+#         CREATE TABLE IF NOT EXISTS friends(
+#             id SERIAL PRIMARY KEY,
+#             sender TEXT,
+#             receiver TEXT,
+#             status TEXT
+#         )
+#     """)
 
-    # Messages
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS messages(
-            id SERIAL PRIMARY KEY,
-            sender TEXT,
-            receiver TEXT,
-            message TEXT,
-            timestamp TEXT
-        )
-    """)
+#     # Messages
+#     cur.execute("""
+#         CREATE TABLE IF NOT EXISTS messages(
+#             id SERIAL PRIMARY KEY,
+#             sender TEXT,
+#             receiver TEXT,
+#             message TEXT,
+#             timestamp TEXT
+#         )
+#     """)
 
-    # Safe migration
-    try:
-        cur.execute("""
-            ALTER TABLE messages
-            ADD COLUMN IF NOT EXISTS timestamp TEXT
-        """)
-    except Exception as e:
-        print("Timestamp column check:", e)
-        conn.rollback()
+#     # Safe migration
+#     try:
+#         cur.execute("""
+#             ALTER TABLE messages
+#             ADD COLUMN IF NOT EXISTS timestamp TEXT
+#         """)
+#     except Exception as e:
+#         print("Timestamp column check:", e)
+#         conn.rollback()
         
-    try:
-        cur.execute("""
-            ALTER TABLE detective_cases
-            ADD COLUMN IF NOT EXISTS required_xp INTEGER DEFAULT 0
-        """)
-    except:
-        conn.rollback()
+#     try:
+#         cur.execute("""
+#             ALTER TABLE detective_cases
+#             ADD COLUMN IF NOT EXISTS required_xp INTEGER DEFAULT 0
+#         """)
+#     except:
+#         conn.rollback()
 
-    # Detective Cases
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS detective_cases(
-            id SERIAL PRIMARY KEY,
-            title TEXT,
-            story TEXT,
-            clues TEXT,
-            suspects TEXT,
-            culprit TEXT,
-            difficulty TEXT,
-            xp INTEGER,
-            required_xp INTEGER DEFAULT 0
-        )
-    """)
+#     # Detective Cases
+#     cur.execute("""
+#         CREATE TABLE IF NOT EXISTS detective_cases(
+#             id SERIAL PRIMARY KEY,
+#             title TEXT,
+#             story TEXT,
+#             clues TEXT,
+#             suspects TEXT,
+#             culprit TEXT,
+#             difficulty TEXT,
+#             xp INTEGER,
+#             required_xp INTEGER DEFAULT 0
+#         )
+#     """)
 
-    # Detective Progress
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS detective_progress(
-            id SERIAL PRIMARY KEY,
-            username TEXT,
-            case_id INTEGER,
-            xp INTEGER
-        )
-    """)
+#     # Detective Progress
+#     cur.execute("""
+#         CREATE TABLE IF NOT EXISTS detective_progress(
+#             id SERIAL PRIMARY KEY,
+#             username TEXT,
+#             case_id INTEGER,
+#             xp INTEGER
+#         )
+#     """)
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-# init_db()
+#     conn.commit()
+#     cur.close()
+#     conn.close()
 
 
-# ---------------- HOME ----------------
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return RedirectResponse("/login", status_code=303)
+# # init_db()
 
 
-# ---------------- LOGIN ----------------
-@app.get("/register", response_class=HTMLResponse)
-def register_page(request: Request):
-    return templates.TemplateResponse(
-        "register.html",
-        {"request": request}
-    )
+# # ---------------- HOME ----------------
+# @app.get("/", response_class=HTMLResponse)
+# def home(request: Request):
+#     return RedirectResponse("/login", status_code=303)
+
+
+# # ---------------- LOGIN ----------------
+# @app.get("/register", response_class=HTMLResponse)
+# def register_page(request: Request):
+#     return templates.TemplateResponse(
+#         "register.html",
+#         {"request": request}
+#     )
     
-@app.post("/register")
-def register(
-    username: str = Form(...),
-    password: str = Form(...)
-):
-    conn = get_conn()
-    cur = conn.cursor()
-
-    try:
-        cur.execute(
-            "INSERT INTO users(username,password) VALUES(%s,%s)",
-            (username, password)
-        )
-        conn.commit()
-        conn.close()
-        return RedirectResponse("/login", status_code=303)
-
-    except:
-        conn.close()
-        return HTMLResponse("Username already exists")
-
-@app.get("/login")
-def login_page(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="login.html"
-    )
-
-@app.post("/login")
-def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT username FROM users WHERE username=%s AND password=%s",
-        (username, password)
-    )
-
-    user = cur.fetchone()
-    conn.close()
+# @app.post("/register")
+# def register(
+#     username: str = Form(...),
+#     password: str = Form(...)
+# ):
+#     conn = get_conn()
+#     cur = conn.cursor()
+
+#     try:
+#         cur.execute(
+#             "INSERT INTO users(username,password) VALUES(%s,%s)",
+#             (username, password)
+#         )
+#         conn.commit()
+#         conn.close()
+#         return RedirectResponse("/login", status_code=303)
+
+#     except:
+#         conn.close()
+#         return HTMLResponse("Username already exists")
+
+# @app.get("/login")
+# def login_page(request: Request):
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="login.html"
+#     )
+
+# @app.post("/login")
+# def login(request: Request, username: str = Form(...), password: str = Form(...)):
+#     conn = get_conn()
+#     cur = conn.cursor()
+
+#     cur.execute(
+#         "SELECT username FROM users WHERE username=%s AND password=%s",
+#         (username, password)
+#     )
+
+#     user = cur.fetchone()
+#     conn.close()
 
-    if not user:
-        return HTMLResponse("Invalid login ❌", status_code=401)
+#     if not user:
+#         return HTMLResponse("Invalid login ❌", status_code=401)
 
-    request.session["username"] = username
-
-    return RedirectResponse("/dashboard", status_code=303)
-
+#     request.session["username"] = username
+
+#     return RedirectResponse("/dashboard", status_code=303)
+
 
-# ---------------- DASHBOARD ----------------
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login")
-
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "username": username
-    })
-
-
-# ---------------- USERS ----------------
-@app.get("/users", response_class=HTMLResponse)
-def users(request: Request):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login")
+# # ---------------- DASHBOARD ----------------
+# @app.get("/dashboard", response_class=HTMLResponse)
+# def dashboard(request: Request):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login")
+
+#     return templates.TemplateResponse("dashboard.html", {
+#         "request": request,
+#         "username": username
+#     })
+
+
+# # ---------------- USERS ----------------
+# @app.get("/users", response_class=HTMLResponse)
+# def users(request: Request):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("SELECT username FROM users WHERE username != %s", (username,))
-    users = cur.fetchall()
-    conn.close()
+#     cur.execute("SELECT username FROM users WHERE username != %s", (username,))
+#     users = cur.fetchall()
+#     conn.close()
 
-    return templates.TemplateResponse("users.html", {
-        "request": request,
-        "users": users
-    })
+#     return templates.TemplateResponse("users.html", {
+#         "request": request,
+#         "users": users
+#     })
 
-
-# ---------------- FRIEND REQUEST ----------------
-@app.post("/send-request")
-def send_request(request: Request, receiver: str = Form(...)):
-    sender = request.session.get("username")
-    if not sender:
-        return RedirectResponse("/login")
-
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute(
-        "INSERT INTO friends(sender, receiver, status) VALUES (%s, %s, 'pending')",
-        (sender, receiver)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return RedirectResponse("/users", status_code=303)
-
-
-# ---------------- REQUESTS ----------------
-@app.get("/requests", response_class=HTMLResponse)
-def requests_page(request: Request):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login")
-
-    conn = get_conn()
-    cur = conn.cursor()
+
+# # ---------------- FRIEND REQUEST ----------------
+# @app.post("/send-request")
+# def send_request(request: Request, receiver: str = Form(...)):
+#     sender = request.session.get("username")
+#     if not sender:
+#         return RedirectResponse("/login")
+
+#     conn = get_conn()
+#     cur = conn.cursor()
+
+#     cur.execute(
+#         "INSERT INTO friends(sender, receiver, status) VALUES (%s, %s, 'pending')",
+#         (sender, receiver)
+#     )
+
+#     conn.commit()
+#     conn.close()
+
+#     return RedirectResponse("/users", status_code=303)
+
+
+# # ---------------- REQUESTS ----------------
+# @app.get("/requests", response_class=HTMLResponse)
+# def requests_page(request: Request):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login")
+
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT id, sender FROM friends WHERE receiver=%s AND status='pending'",
-        (username,)
-    )
-
-    requests = cur.fetchall()
-    conn.close()
+#     cur.execute(
+#         "SELECT id, sender FROM friends WHERE receiver=%s AND status='pending'",
+#         (username,)
+#     )
+
+#     requests = cur.fetchall()
+#     conn.close()
 
-    return templates.TemplateResponse("requests.html", {
-        "request": request,
-        "requests": requests
-    })
-
+#     return templates.TemplateResponse("requests.html", {
+#         "request": request,
+#         "requests": requests
+#     })
+
 
-# ---------------- ACCEPT REQUEST ----------------
-@app.post("/accept-request")
-def accept(request_id: int = Form(...)):
-    conn = get_conn()
-    cur = conn.cursor()
+# # ---------------- ACCEPT REQUEST ----------------
+# @app.post("/accept-request")
+# def accept(request_id: int = Form(...)):
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("UPDATE friends SET status='accepted' WHERE id=%s", (request_id,))
+#     cur.execute("UPDATE friends SET status='accepted' WHERE id=%s", (request_id,))
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return RedirectResponse("/requests", status_code=303)
+#     return RedirectResponse("/requests", status_code=303)
 
 
-# ---------------- CHAT LIST ----------------
-@app.get("/friends", response_class=HTMLResponse)
-def friends(request: Request):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login", status_code=303)
+# # ---------------- CHAT LIST ----------------
+# @app.get("/friends", response_class=HTMLResponse)
+# def friends(request: Request):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login", status_code=303)
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT sender, receiver
-        FROM friends
-        WHERE status='accepted'
-        AND (sender=%s OR receiver=%s)
-    """, (username, username))
+#     cur.execute("""
+#         SELECT sender, receiver
+#         FROM friends
+#         WHERE status='accepted'
+#         AND (sender=%s OR receiver=%s)
+#     """, (username, username))
 
-    data = cur.fetchall()
-    conn.close()
+#     data = cur.fetchall()
+#     conn.close()
 
-    friend_set = set()
+#     friend_set = set()
 
-    for s, r in data:
-        friend_set.add(r if s == username else s)
+#     for s, r in data:
+#         friend_set.add(r if s == username else s)
 
-    return templates.TemplateResponse("friends.html", {
-        "request": request,
-        "friends": list(friend_set)
-    })
+#     return templates.TemplateResponse("friends.html", {
+#         "request": request,
+#         "friends": list(friend_set)
+#     })
 
 
-# ---------------- CHAT PAGE ----------------
-@app.get("/chat/{friend}", response_class=HTMLResponse)
-def chat(request: Request, friend: str):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login")
+# # ---------------- CHAT PAGE ----------------
+# @app.get("/chat/{friend}", response_class=HTMLResponse)
+# def chat(request: Request, friend: str):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT id, sender, message, timestamp
-        FROM messages
-        WHERE (sender=%s AND receiver=%s)
-        OR (sender=%s AND receiver=%s)
-        ORDER BY id 
-    """, (username, friend, friend, username))
+#     cur.execute("""
+#         SELECT id, sender, message, timestamp
+#         FROM messages
+#         WHERE (sender=%s AND receiver=%s)
+#         OR (sender=%s AND receiver=%s)
+#         ORDER BY id 
+#     """, (username, friend, friend, username))
 
-    messages = cur.fetchall()
-    conn.close()
+#     messages = cur.fetchall()
+#     conn.close()
 
-    return templates.TemplateResponse(
-        "chat.html",
-        {
-            "request": request,
-            "messages": messages,
-            "friend": friend,
-            "username": username
-        }
-    )
+#     return templates.TemplateResponse(
+#         "chat.html",
+#         {
+#             "request": request,
+#             "messages": messages,
+#             "friend": friend,
+#             "username": username
+#         }
+#     )
 
 
-# ---------------- SEND MESSAGE ----------------
-@app.post("/chat/{friend}")
-def send_message(request: Request, friend: str, message: str = Form(...)):
-    username = request.session.get("username")
-    if not username:
-        return RedirectResponse("/login")
+# # ---------------- SEND MESSAGE ----------------
+# @app.post("/chat/{friend}")
+# def send_message(request: Request, friend: str, message: str = Form(...)):
+#     username = request.session.get("username")
+#     if not username:
+#         return RedirectResponse("/login")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    current_time = datetime.now(
-        ZoneInfo("Asia/Kolkata")
-    ).strftime("%I:%M %p")
+#     current_time = datetime.now(
+#         ZoneInfo("Asia/Kolkata")
+#     ).strftime("%I:%M %p")
 
-    cur.execute(
-        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
-        (username, friend, message, current_time)
-    )
+#     cur.execute(
+#         "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+#         (username, friend, message, current_time)
+#     )
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return RedirectResponse(f"/chat/{friend}", status_code=303)
+#     return RedirectResponse(f"/chat/{friend}", status_code=303)
 
 
-# ---------------- WHO AM I ----------------
-@app.get("/whoami")
-def whoami(request: Request):
-    return {"username": request.session.get("username")}
+# # ---------------- WHO AM I ----------------
+# @app.get("/whoami")
+# def whoami(request: Request):
+#     return {"username": request.session.get("username")}
 
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
-    username = request.session.get("username")
+# @app.get("/dashboard", response_class=HTMLResponse)
+# def dashboard(request: Request):
+#     username = request.session.get("username")
 
-    if not username:
-        return RedirectResponse("/login", status_code=303)
+#     if not username:
+#         return RedirectResponse("/login", status_code=303)
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "username": username
-    })
+#     return templates.TemplateResponse("dashboard.html", {
+#         "request": request,
+#         "username": username
+#     })
 
-@app.get("/logout")
-def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse("/", status_code=303)
+# @app.get("/logout")
+# def logout(request: Request):
+#     request.session.clear()
+#     return RedirectResponse("/", status_code=303)
 
-@app.post("/upload/{friend}")
-def upload_image(friend: str, file: UploadFile = File(...), request: Request = None):
-    username = request.session.get("username")
+# @app.post("/upload/{friend}")
+# def upload_image(friend: str, file: UploadFile = File(...), request: Request = None):
+#     username = request.session.get("username")
 
-    if not username:
-        return {"error": "not logged in"}
+#     if not username:
+#         return {"error": "not logged in"}
 
-    file_path = f"/uploads/{file.filename}"
+#     file_path = f"/uploads/{file.filename}"
 
-    with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+#     with open(file_path, "wb") as buffer:
+#         buffer.write(file.file.read())
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    current_time = datetime.now().strftime("%I:%M %p")
+#     current_time = datetime.now().strftime("%I:%M %p")
 
-    cur.execute(
-        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
-        (username, friend, file_path, current_time)
-    )
+#     cur.execute(
+#         "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+#         (username, friend, file_path, current_time)
+#     )
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return {"message": "image sent"}
+#     return {"message": "image sent"}
 
-@app.get("/delete-message/{msg_id}/{friend}")
-def delete_message(msg_id: int, friend: str):
+# @app.get("/delete-message/{msg_id}/{friend}")
+# def delete_message(msg_id: int, friend: str):
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute(
-        "DELETE FROM messages WHERE id=%s",
-        (msg_id,)
-    )
+#     cur.execute(
+#         "DELETE FROM messages WHERE id=%s",
+#         (msg_id,)
+#     )
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return RedirectResponse(
-        f"/chat/{friend}",
-        status_code=303
-    )
+#     return RedirectResponse(
+#         f"/chat/{friend}",
+#         status_code=303
+#     )
 
-@app.get("/camera", response_class=HTMLResponse)
-def camera(request: Request):
-    return templates.TemplateResponse("camera.html", {"request": request})
+# @app.get("/camera", response_class=HTMLResponse)
+# def camera(request: Request):
+#     return templates.TemplateResponse("camera.html", {"request": request})
 
 
 
-@app.post("/camera-upload/{friend}")
-async def camera_upload(friend: str, request: Request):
-    data = await request.json()
+# @app.post("/camera-upload/{friend}")
+# async def camera_upload(friend: str, request: Request):
+#     data = await request.json()
 
-    image_data = data["image"]
+#     image_data = data["image"]
 
-    # remove base64 header
-    image_data = image_data.split(",")[1]
+#     # remove base64 header
+#     image_data = image_data.split(",")[1]
 
-    filename = f"{uuid.uuid4()}.png"
+#     filename = f"{uuid.uuid4()}.png"
 
-    save_path = f"uploads/{filename}"
-    db_path = f"/uploads/{filename}"
+#     save_path = f"uploads/{filename}"
+#     db_path = f"/uploads/{filename}"
 
-    with open(save_path, "wb") as f:
-        f.write(base64.b64decode(image_data))
+#     with open(save_path, "wb") as f:
+#         f.write(base64.b64decode(image_data))
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    username = request.session.get("username")
+#     username = request.session.get("username")
 
-    current_time = datetime.now(
-        ZoneInfo("Asia/Kolkata")
-    ).strftime("%I:%M %p")
+#     current_time = datetime.now(
+#         ZoneInfo("Asia/Kolkata")
+#     ).strftime("%I:%M %p")
 
-    cur.execute(
-        "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
-        (username, friend, db_path, current_time)
-    )
+#     cur.execute(
+#         "INSERT INTO messages(sender, receiver, message, timestamp) VALUES (%s, %s, %s, %s)",
+#         (username, friend, db_path, current_time)
+#     )
 
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return {"message": "sent"}
+#     return {"message": "sent"}
 
-@app.get("/camera/{friend}", response_class=HTMLResponse)
-def camera(request: Request, friend: str):
-    return templates.TemplateResponse("camera.html", {
-        "request": request,
-        "friend": friend
-    })
+# @app.get("/camera/{friend}", response_class=HTMLResponse)
+# def camera(request: Request, friend: str):
+#     return templates.TemplateResponse("camera.html", {
+#         "request": request,
+#         "friend": friend
+#     })
     
-@app.get("/filters/{friend}", response_class=HTMLResponse)
-def filters(request: Request, friend: str):
-    return templates.TemplateResponse(
-        "filter.html",
-        {
-            "request": request,
-            "friend": friend
-        }
-    )
+# @app.get("/filters/{friend}", response_class=HTMLResponse)
+# def filters(request: Request, friend: str):
+#     return templates.TemplateResponse(
+#         "filter.html",
+#         {
+#             "request": request,
+#             "friend": friend
+#         }
+#     )
     
-@app.get("/test")
-def test():
-    return HTMLResponse("<h1>Test works</h1>")
+# @app.get("/test")
+# def test():
+#     return HTMLResponse("<h1>Test works</h1>")
 
-@app.get("/test-template")
-def test_template(request: Request):
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request}
-    )
+# @app.get("/test-template")
+# def test_template(request: Request):
+#     return templates.TemplateResponse(
+#         "login.html",
+#         {"request": request}
+#     )
 
-@app.get("/test-users")
-def test_users():
-    conn = get_conn()
-    cur = conn.cursor()
+# @app.get("/test-users")
+# def test_users():
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM users")
-    data = cur.fetchall()
+#     cur.execute("SELECT * FROM users")
+#     data = cur.fetchall()
 
-    conn.close()
+#     conn.close()
 
-    return {"users": data}
+#     return {"users": data}
 
-@app.get("/count-users")
-def count_users():
-    conn = get_conn()
-    cur = conn.cursor()
+# @app.get("/count-users")
+# def count_users():
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) FROM users")
-    count = cur.fetchone()[0]
+#     cur.execute("SELECT COUNT(*) FROM users")
+#     count = cur.fetchone()[0]
 
-    conn.close()
+#     conn.close()
 
-    return {"count": count}
+#     return {"count": count}
 
 
-@app.get("/debug-users-page")
-def debug_users_page(request: Request):
-    username = request.session.get("username")
+# @app.get("/debug-users-page")
+# def debug_users_page(request: Request):
+#     username = request.session.get("username")
 
-    conn = get_conn()
-    cur = conn.cursor()
+#     conn = get_conn()
+#     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT username FROM users WHERE username != %s",
-        (username,)
-    )
+#     cur.execute(
+#         "SELECT username FROM users WHERE username != %s",
+#         (username,)
+#     )
 
-    data = cur.fetchall()
+#     data = cur.fetchall()
 
-    conn.close()
+#     conn.close()
 
-    return {
-        "logged_in_as": username,
-        "users": data
-    }
+#     return {
+#         "logged_in_as": username,
+#         "users": data
+#     }
     
 # @app.get("/search-users")
 # def search_users(request: Request, q: str = ""):
