@@ -4,7 +4,7 @@ app = FastAPI()
 
 @app.get("/")
 def home():
-    return {"status": "working"}
+    return {"status": "ok"}
 
 # from fastapi import FastAPI, Request, Form
 # from fastapi import File, UploadFile
