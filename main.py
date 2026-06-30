@@ -17,8 +17,14 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 print("DATABASE_URL =", DATABASE_URL)
 
+@app.get("/ping")
+def ping():
+    return {"ok": True}
+
 def get_conn():
-     return psycopg2.connect(DATABASE_URL)
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not found in .env")
+    return psycopg2.connect(DATABASE_URL)
 
 app = FastAPI()
 
@@ -109,13 +115,61 @@ def init_db():
              xp INTEGER
          )
      """)
+     
+     cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            blinks INTEGER DEFAULT 0,
+            gems INTEGER DEFAULT 0,
+            coins INTEGER DEFAULT 0
+        )
+    """)
+     
+     # Rewards
+     cur.execute("""
+    CREATE TABLE IF NOT EXISTS player_rewards(
+        username TEXT PRIMARY KEY,
+        xp INTEGER DEFAULT 0,
+        gems INTEGER DEFAULT 0,
+        blinks INTEGER DEFAULT 0,
+        coins INTEGER DEFAULT 0,
+        login_streak INTEGER DEFAULT 0,
+        total_login_days INTEGER DEFAULT 0,
+        last_login DATE,
+        hundred_day_claimed BOOLEAN DEFAULT FALSE
+    )
+    """)
+
+    # Reward History
+     cur.execute("""
+    CREATE TABLE IF NOT EXISTS reward_history(
+        id SERIAL PRIMARY KEY,
+        username TEXT,
+        reward_type TEXT,
+        xp INTEGER DEFAULT 0,
+        gems INTEGER DEFAULT 0,
+        blinks INTEGER DEFAULT 0,
+        coins INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+     
+     cur.execute("""
+    CREATE TABLE IF NOT EXISTS detective_attempts(
+        username TEXT,
+        case_id INTEGER,
+        attempts INTEGER DEFAULT 0,
+        PRIMARY KEY(username, case_id)
+    )
+    """)
 
      conn.commit()
      cur.close()
      conn.close()
 
 
-init_db()
+# init_db()
 
  # ---------------- HOME ----------------
 @app.get("/", response_class=HTMLResponse)
@@ -365,18 +419,6 @@ def send_message(request: Request, friend: str, message: str = Form(...)):
 def whoami(request: Request):
     return {"username": request.session.get("username")}
 
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
-    username = request.session.get("username")
-
-    if not username:
-        return RedirectResponse("/login", status_code=303)
-
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "username": username
-    })
-
 @app.get("/logout")
 def logout(request: Request):
     request.session.clear()
@@ -497,18 +539,6 @@ def test_template(request: Request):
         "login.html",
         {"request": request}
     )
-
-@app.get("/test-users")
-def test_users():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM users")
-    data = cur.fetchall()
-
-    conn.close()
-
-    return {"users": data}
 
 @app.get("/count-users")
 def count_users():
@@ -835,9 +865,12 @@ def accuse(
     suspect: str = Form(...)
 ):
 
+    username = request.session.get("username")
+
     conn = get_conn()
     cur = conn.cursor()
 
+    # Get correct culprit and XP reward
     cur.execute("""
         SELECT culprit, xp
         FROM detective_cases
@@ -846,19 +879,18 @@ def accuse(
 
     data = cur.fetchone()
 
-    conn.close()
+    if not data:
+        conn.close()
+        return HTMLResponse("Case not found", status_code=404)
 
     culprit = data[0]
     xp = data[1]
 
-    won = suspect == culprit
-    
+    won = (suspect == culprit)
+
     if won:
-        username = request.session.get("username")
 
-        conn = get_conn()
-        cur = conn.cursor()
-
+        # Check if user already completed this case
         cur.execute("""
             SELECT id
             FROM detective_progress
@@ -870,15 +902,39 @@ def accuse(
 
         if not already_done:
 
+            # Save detective progress
             cur.execute("""
                 INSERT INTO detective_progress
                 (username, case_id, xp)
-                VALUES (%s,%s,%s)
+                VALUES(%s,%s,%s)
             """, (username, case_id, xp))
 
             conn.commit()
 
-        conn.close()
+            # Count attempts
+            attempts = update_attempts(username, case_id)
+
+            # First attempt rewards
+            if attempts == 1:
+                add_rewards(
+                    username,
+                    xp=xp,
+                    gems=5,
+                    blinks=10,
+                    reason="Solved Case - First Attempt"
+                )
+
+            # Second attempt rewards
+            elif attempts == 2:
+                add_rewards(
+                    username,
+                    xp=xp // 2,
+                    gems=2,
+                    blinks=5,
+                    reason="Solved Case - Second Attempt"
+                )
+
+    conn.close()
 
     return templates.TemplateResponse(
         "case_result.html",
@@ -918,13 +974,23 @@ def detective_profile(request: Request):
     conn = get_conn()
     cur = conn.cursor()
 
+    # XP
     cur.execute("""
         SELECT COALESCE(SUM(xp),0)
         FROM detective_progress
         WHERE username=%s
     """, (username,))
-
     xp = cur.fetchone()[0]
+
+    # USER STATS (blinks, gems, coins)
+    cur.execute("""
+        SELECT blinks, gems, coins
+        FROM users
+        WHERE username=%s
+    """, (username,))
+    user = cur.fetchone()
+
+    blinks, gems, coins = user if user else (0, 0, 0)
 
     conn.close()
 
@@ -960,9 +1026,58 @@ def detective_profile(request: Request):
             "xp": xp,
             "level": level,
             "progress": progress,
-            "next_xp": next_xp
+            "next_xp": next_xp,
+            "blinks": blinks,
+            "gems": gems,
+            "coins": coins
         }
     )
+    
+def get_user_profile(username):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT blinks, gems, coins
+        FROM users
+        WHERE username = %s
+    """, (username,))
+    
+    
+    def add_rewards(username, xp=0, gems=0, blinks=0, coins=0, reason="Reward"):
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO player_rewards(username)
+            VALUES(%s)
+            ON CONFLICT(username) DO NOTHING
+        """, (username,))
+
+        cur.execute("""
+            UPDATE player_rewards
+            SET
+                xp = xp + %s,
+                gems = gems + %s,
+                blinks = blinks + %s,
+                coins = coins + %s
+            WHERE username=%s
+        """, (xp, gems, blinks, coins, username))
+
+        cur.execute("""
+            INSERT INTO reward_history
+            (username,reward_type,xp,gems,blinks,coins)
+            VALUES(%s,%s,%s,%s,%s,%s)
+        """, (username, reason, xp, gems, blinks, coins))
+
+        conn.commit()
+        conn.close()
+
+    user = cur.fetchone()
+    conn.close()
+
+    return user
     
 @app.get("/setup-case-xp")
 def setup_case_xp():
@@ -979,3 +1094,48 @@ def setup_case_xp():
     conn.close()
 
     return {"message":"XP requirements added"}
+
+@app.get("/profile/{username}")
+def profile(username: str):
+    user = get_user_profile(username)
+
+    if not user:
+        return {"error": "User not found"}
+
+    return {
+        "username": username,
+        "blinks": user[0],
+        "gems": user[1],
+        "coins": user[2]
+    }
+    
+def update_attempts(username, case_id):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT attempts
+        FROM detective_attempts
+        WHERE username=%s
+        AND case_id=%s
+    """, (username, case_id))
+
+    row = cur.fetchone()
+
+    attempts = 1
+
+    if row:
+        attempts = row[0] + 1
+
+    cur.execute("""
+        INSERT INTO detective_attempts(username, case_id, attempts)
+        VALUES(%s,%s,%s)
+        ON CONFLICT(username, case_id)
+        DO UPDATE SET attempts=%s
+    """, (username, case_id, attempts, attempts))
+
+    conn.commit()
+    conn.close()
+
+    return attempts
