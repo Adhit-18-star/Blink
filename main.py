@@ -17,10 +17,6 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 print("DATABASE_URL =", DATABASE_URL)
 
-@app.get("/ping")
-def ping():
-    return {"ok": True}
-
 def get_conn():
     if not DATABASE_URL:
         raise Exception("DATABASE_URL not found in .env")
