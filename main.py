@@ -22,7 +22,7 @@ def get_conn():
         raise Exception("DATABASE_URL not found in .env")
     return psycopg2.connect(DATABASE_URL)
 
-app = FastAPI()
+app = FastAPI(debug=True)
 
 os.makedirs("uploads", exist_ok=True)
 
@@ -37,135 +37,142 @@ templates = Jinja2Templates(directory="templates")
 
  # ---------------- DB ----------------
 def init_db():
-     conn = get_conn()
-     cur = conn.cursor()
+    conn = get_conn()
+    cur = conn.cursor()
 
-     # Users
-     cur.execute("""
-         CREATE TABLE IF NOT EXISTS users(
-             id SERIAL PRIMARY KEY,
-             username TEXT UNIQUE,
-             password TEXT
-         )
-     """)
-
-     # Friends
-     cur.execute("""
-         CREATE TABLE IF NOT EXISTS friends(
-             id SERIAL PRIMARY KEY,
-             sender TEXT,
-             receiver TEXT,
-             status TEXT
-         )
-     """)
-
-     # Messages
-     cur.execute("""
-         CREATE TABLE IF NOT EXISTS messages(
-             id SERIAL PRIMARY KEY,
-             sender TEXT,
-             receiver TEXT,
-             message TEXT,
-             timestamp TEXT        )
-     """)
-
-     # Safe migration
-     try:
-         cur.execute("""
-             ALTER TABLE messages
-             ADD COLUMN IF NOT EXISTS timestamp TEXT
-         """)
-     except Exception as e:
-         print("Timestamp column check:", e)
-         conn.rollback()
-        
-     try:
-         cur.execute("""
-             ALTER TABLE detective_cases
-             ADD COLUMN IF NOT EXISTS required_xp INTEGER DEFAULT 0
-         """)
-     except:
-         conn.rollback()
-
-     # Detective Cases
-     cur.execute("""
-         CREATE TABLE IF NOT EXISTS detective_cases(
-             id SERIAL PRIMARY KEY,
-             title TEXT,
-             story TEXT,
-             clues TEXT,
-             suspects TEXT,
-             culprit TEXT,
-             difficulty TEXT,
-             xp INTEGER,
-             required_xp INTEGER DEFAULT 0
-         )
-     """)
-
-     # Detective Progress
-     cur.execute("""
-         CREATE TABLE IF NOT EXISTS detective_progress(
-             id SERIAL PRIMARY KEY,
-             username TEXT,
-             case_id INTEGER,
-             xp INTEGER
-         )
-     """)
-     
-     cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+    # ---------------- USERS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users(
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE,
-            blinks INTEGER DEFAULT 0,
-            gems INTEGER DEFAULT 0,
-            coins INTEGER DEFAULT 0
+            password TEXT
         )
     """)
-     
-     # Rewards
-     cur.execute("""
-    CREATE TABLE IF NOT EXISTS player_rewards(
-        username TEXT PRIMARY KEY,
-        xp INTEGER DEFAULT 0,
-        gems INTEGER DEFAULT 0,
-        blinks INTEGER DEFAULT 0,
-        coins INTEGER DEFAULT 0,
-        login_streak INTEGER DEFAULT 0,
-        total_login_days INTEGER DEFAULT 0,
-        last_login DATE,
-        hundred_day_claimed BOOLEAN DEFAULT FALSE
-    )
+
+    # Add new columns if they don't exist
+    try:
+        cur.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS blinks INTEGER DEFAULT 0
+        """)
+        cur.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS gems INTEGER DEFAULT 0
+        """)
+        cur.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0
+        """)
+    except:
+        conn.rollback()
+
+    # ---------------- FRIENDS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS friends(
+            id SERIAL PRIMARY KEY,
+            sender TEXT,
+            receiver TEXT,
+            status TEXT
+        )
     """)
 
-    # Reward History
-     cur.execute("""
-    CREATE TABLE IF NOT EXISTS reward_history(
-        id SERIAL PRIMARY KEY,
-        username TEXT,
-        reward_type TEXT,
-        xp INTEGER DEFAULT 0,
-        gems INTEGER DEFAULT 0,
-        blinks INTEGER DEFAULT 0,
-        coins INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-     
-     cur.execute("""
-    CREATE TABLE IF NOT EXISTS detective_attempts(
-        username TEXT,
-        case_id INTEGER,
-        attempts INTEGER DEFAULT 0,
-        PRIMARY KEY(username, case_id)
-    )
+    # ---------------- MESSAGES ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS messages(
+            id SERIAL PRIMARY KEY,
+            sender TEXT,
+            receiver TEXT,
+            message TEXT,
+            timestamp TEXT
+        )
     """)
 
-     conn.commit()
-     cur.close()
-     conn.close()
+    try:
+        cur.execute("""
+            ALTER TABLE messages
+            ADD COLUMN IF NOT EXISTS timestamp TEXT
+        """)
+    except:
+        conn.rollback()
+
+    # ---------------- DETECTIVE CASES ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS detective_cases(
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            story TEXT,
+            clues TEXT,
+            suspects TEXT,
+            culprit TEXT,
+            difficulty TEXT,
+            xp INTEGER,
+            required_xp INTEGER DEFAULT 0
+        )
+    """)
+
+    try:
+        cur.execute("""
+            ALTER TABLE detective_cases
+            ADD COLUMN IF NOT EXISTS required_xp INTEGER DEFAULT 0
+        """)
+    except:
+        conn.rollback()
+
+    # ---------------- DETECTIVE PROGRESS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS detective_progress(
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            case_id INTEGER,
+            xp INTEGER
+        )
+    """)
+
+    # ---------------- PLAYER REWARDS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS player_rewards(
+            username TEXT PRIMARY KEY,
+            xp INTEGER DEFAULT 0,
+            gems INTEGER DEFAULT 0,
+            blinks INTEGER DEFAULT 0,
+            coins INTEGER DEFAULT 0,
+            login_streak INTEGER DEFAULT 0,
+            total_login_days INTEGER DEFAULT 0,
+            last_login DATE,
+            hundred_day_claimed BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    # ---------------- REWARD HISTORY ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS reward_history(
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            reward_type TEXT,
+            xp INTEGER DEFAULT 0,
+            gems INTEGER DEFAULT 0,
+            blinks INTEGER DEFAULT 0,
+            coins INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ---------------- DETECTIVE ATTEMPTS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS detective_attempts(
+            username TEXT,
+            case_id INTEGER,
+            attempts INTEGER DEFAULT 0,
+            PRIMARY KEY(username, case_id)
+        )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
-# init_db()
+init_db()
 
  # ---------------- HOME ----------------
 @app.get("/", response_class=HTMLResponse)
@@ -860,13 +867,12 @@ def accuse(
     case_id: int,
     suspect: str = Form(...)
 ):
-
     username = request.session.get("username")
 
     conn = get_conn()
     cur = conn.cursor()
 
-    # Get correct culprit and XP reward
+    # Get case
     cur.execute("""
         SELECT culprit, xp
         FROM detective_cases
@@ -886,7 +892,7 @@ def accuse(
 
     if won:
 
-        # Check if user already completed this case
+        # Check if already solved
         cur.execute("""
             SELECT id
             FROM detective_progress
@@ -898,7 +904,7 @@ def accuse(
 
         if not already_done:
 
-            # Save detective progress
+            # Save XP
             cur.execute("""
                 INSERT INTO detective_progress
                 (username, case_id, xp)
@@ -906,31 +912,22 @@ def accuse(
             """, (username, case_id, xp))
 
             conn.commit()
+            conn.close()
 
-            # Count attempts
-            attempts = update_attempts(username, case_id)
+            # Reward player
+            add_rewards(
+                username=username,
+                xp=10,
+                gems=5,
+                blinks=10,
+                reason="Solved Detective Case"
+            )
 
-            # First attempt rewards
-            if attempts == 1:
-                add_rewards(
-                    username,
-                    xp=xp,
-                    gems=5,
-                    blinks=10,
-                    reason="Solved Case - First Attempt"
-                )
+        else:
+            conn.close()
 
-            # Second attempt rewards
-            elif attempts == 2:
-                add_rewards(
-                    username,
-                    xp=xp // 2,
-                    gems=2,
-                    blinks=5,
-                    reason="Solved Case - Second Attempt"
-                )
-
-    conn.close()
+    else:
+        conn.close()
 
     return templates.TemplateResponse(
         "case_result.html",
@@ -967,29 +964,42 @@ def detective_profile(request: Request):
 
     username = request.session.get("username")
 
+    if not username:
+        return RedirectResponse("/login", status_code=303)
+
     conn = get_conn()
     cur = conn.cursor()
 
-    # XP
+    # Get rewards
     cur.execute("""
-        SELECT COALESCE(SUM(xp),0)
-        FROM detective_progress
+        SELECT
+            COALESCE(xp,0),
+            COALESCE(blinks,0),
+            COALESCE(gems,0),
+            COALESCE(coins,0),
+            COALESCE(login_streak,0)
+        FROM player_rewards
         WHERE username=%s
     """, (username,))
-    xp = cur.fetchone()[0]
 
-    # USER STATS (blinks, gems, coins)
-    cur.execute("""
-        SELECT blinks, gems, coins
-        FROM users
-        WHERE username=%s
-    """, (username,))
     user = cur.fetchone()
-
-    blinks, gems, coins = user if user else (0, 0, 0)
 
     conn.close()
 
+    if user:
+        xp = user[0]
+        blinks = user[1]
+        gems = user[2]
+        coins = user[3]
+        login_streak = user[4]
+    else:
+        xp = 0
+        blinks = 0
+        gems = 0
+        coins = 0
+        login_streak = 0
+
+    # Detective Level
     if xp >= 1000:
         level = "Legend Detective"
         next_xp = 1000
@@ -1025,7 +1035,8 @@ def detective_profile(request: Request):
             "next_xp": next_xp,
             "blinks": blinks,
             "gems": gems,
-            "coins": coins
+            "coins": coins,
+            "login_streak": login_streak
         }
     )
     
@@ -1036,44 +1047,45 @@ def get_user_profile(username):
     cur.execute("""
         SELECT blinks, gems, coins
         FROM users
-        WHERE username = %s
+        WHERE username=%s
     """, (username,))
-    
-    
-    def add_rewards(username, xp=0, gems=0, blinks=0, coins=0, reason="Reward"):
-
-        conn = get_conn()
-        cur = conn.cursor()
-
-        cur.execute("""
-            INSERT INTO player_rewards(username)
-            VALUES(%s)
-            ON CONFLICT(username) DO NOTHING
-        """, (username,))
-
-        cur.execute("""
-            UPDATE player_rewards
-            SET
-                xp = xp + %s,
-                gems = gems + %s,
-                blinks = blinks + %s,
-                coins = coins + %s
-            WHERE username=%s
-        """, (xp, gems, blinks, coins, username))
-
-        cur.execute("""
-            INSERT INTO reward_history
-            (username,reward_type,xp,gems,blinks,coins)
-            VALUES(%s,%s,%s,%s,%s,%s)
-        """, (username, reason, xp, gems, blinks, coins))
-
-        conn.commit()
-        conn.close()
 
     user = cur.fetchone()
+
     conn.close()
 
     return user
+
+
+def add_rewards(username, xp=0, gems=0, blinks=0, coins=0, reason="Reward"):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO player_rewards(username)
+        VALUES(%s)
+        ON CONFLICT(username) DO NOTHING
+    """, (username,))
+
+    cur.execute("""
+        UPDATE player_rewards
+        SET
+            xp = xp + %s,
+            gems = gems + %s,
+            blinks = blinks + %s,
+            coins = coins + %s
+        WHERE username=%s
+    """, (xp, gems, blinks, coins, username))
+
+    cur.execute("""
+        INSERT INTO reward_history
+        (username,reward_type,xp,gems,blinks,coins)
+        VALUES(%s,%s,%s,%s,%s,%s)
+    """, (username, reason, xp, gems, blinks, coins))
+
+    conn.commit()
+    conn.close()
     
 @app.get("/setup-case-xp")
 def setup_case_xp():
@@ -1135,3 +1147,37 @@ def update_attempts(username, case_id):
     conn.close()
 
     return attempts
+
+
+@app.get("/fix-player-rewards")
+def fix_player_rewards():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        ALTER TABLE player_rewards
+        ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0
+    """)
+
+    conn.commit()
+    conn.close()
+
+    return {"message": "Fixed"}
+
+@app.get("/check-player-table")
+def check_player_table():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='player_rewards'
+        ORDER BY ordinal_position
+    """)
+
+    columns = cur.fetchall()
+
+    conn.close()
+
+    return {"columns": columns}
