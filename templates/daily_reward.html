@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily Rewards</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body{
+            margin:0;
+            background:#071426;
+            font-family:Arial,sans-serif;
+            color:white;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+        }
+
+        .card{
+            width:420px;
+            background:#0f1f38;
+            border:1px solid #334155;
+            border-radius:20px;
+            padding:35px;
+            text-align:center;
+            box-shadow:0 0 25px rgba(0,0,0,.35);
+        }
+
+        h1{
+            margin-top:0;
+        }
+
+        .reward{
+            margin:25px 0;
+            padding:18px;
+            border-radius:12px;
+            background:#1e5eff;
+            font-size:22px;
+            font-weight:bold;
+        }
+
+        .btn{
+            display:inline-block;
+            margin-top:20px;
+            padding:12px 25px;
+            background:#1e5eff;
+            color:white;
+            text-decoration:none;
+            border-radius:10px;
+        }
+
+        .btn:hover{
+            background:#3b75ff;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>🎁 Daily Reward</h1>
+
+    <div class="reward">
+        {{ reward }}
+    </div>
+
+    <a href="/dashboard" class="btn">
+        Back to Dashboard
+    </a>
+
+</div>
+
+</body>
+</html>

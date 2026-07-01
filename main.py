@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import psycopg2
 from dotenv import load_dotenv
+from random import randint
 
 load_dotenv()
 
@@ -166,6 +167,16 @@ def init_db():
             PRIMARY KEY(username, case_id)
         )
     """)
+    
+    # ---------------- DAILY REWARDS ----------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS daily_rewards(
+            username TEXT PRIMARY KEY,
+            reward_day INTEGER DEFAULT 1,
+            last_claim DATE,
+            chest_opened BOOLEAN DEFAULT FALSE
+        )
+        """)
 
     conn.commit()
     cur.close()
@@ -1181,3 +1192,96 @@ def check_player_table():
     conn.close()
 
     return {"columns": columns}
+
+
+def claim_daily_reward(username):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    today = date.today()
+
+    # Create row if user doesn't have one
+    cur.execute("""
+        INSERT INTO daily_rewards(username)
+        VALUES(%s)
+        ON CONFLICT(username) DO NOTHING
+    """, (username,))
+
+    # Get current reward info
+    cur.execute("""
+        SELECT reward_day, last_claim
+        FROM daily_rewards
+        WHERE username=%s
+    """, (username,))
+
+    reward_day, last_claim = cur.fetchone()
+
+    # Already claimed today
+    if last_claim == today:
+        conn.close()
+        return "already"
+
+    # Day 1,3,5 = 10 Blinks
+    if reward_day in [1, 3, 5]:
+        add_rewards(username, blinks=10, reason="Daily Reward")
+        reward = "10 Blinks"
+
+    # Day 2,4,6 = 2 Gems
+    elif reward_day in [2, 4, 6]:
+        add_rewards(username, gems=2, reason="Daily Reward")
+        reward = "2 Gems"
+
+    # Day 7 = Mystery Chest
+    else:
+        chest = randint(1, 4)
+
+        if chest == 1:
+            add_rewards(username, blinks=50, reason="Mystery Chest")
+            reward = "Mystery Chest: 50 Blinks"
+
+        elif chest == 2:
+            add_rewards(username, gems=10, reason="Mystery Chest")
+            reward = "Mystery Chest: 10 Gems"
+
+        elif chest == 3:
+            add_rewards(username, blinks=100, reason="Mystery Chest")
+            reward = "Mystery Chest: 100 Blinks"
+
+        else:
+            add_rewards(username, gems=25, reason="Mystery Chest")
+            reward = "Mystery Chest: 25 Gems"
+
+    # Next reward day
+    next_day = reward_day + 1
+    if next_day > 7:
+        next_day = 1
+
+    cur.execute("""
+        UPDATE daily_rewards
+        SET reward_day=%s,
+            last_claim=%s
+        WHERE username=%s
+    """, (next_day, today, username))
+
+    conn.commit()
+    conn.close()
+
+    return reward
+
+@app.get("/daily-reward", response_class=HTMLResponse)
+def daily_reward(request: Request):
+
+    username = request.session.get("username")
+
+    if not username:
+        return RedirectResponse("/login", status_code=303)
+
+    reward = claim_daily_reward(username)
+
+    return templates.TemplateResponse(
+        "daily_reward.html",
+        {
+            "request": request,
+            "reward": reward
+        }
+    )
