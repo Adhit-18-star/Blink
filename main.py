@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Form
 from fastapi import File, UploadFile
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 import os
 import base64
@@ -16,7 +16,6 @@ from random import randint
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-print("DATABASE_URL =", DATABASE_URL)
 
 def get_conn():
     if not DATABASE_URL:
@@ -24,6 +23,8 @@ def get_conn():
     return psycopg2.connect(DATABASE_URL)
 
 app = FastAPI(debug=True)
+
+
 
 os.makedirs("uploads", exist_ok=True)
 
@@ -173,16 +174,24 @@ def init_db():
         CREATE TABLE IF NOT EXISTS daily_rewards(
             username TEXT PRIMARY KEY,
             reward_day INTEGER DEFAULT 1,
-            last_claim DATE,
-            chest_opened BOOLEAN DEFAULT FALSE
+            last_claim TIMESTAMP
         )
         """)
+    
+    try:
+        cur.execute("""
+            ALTER TABLE daily_rewards
+            ALTER COLUMN last_claim TYPE TIMESTAMP
+            USING last_claim::timestamp
+        """)
+    except:
+        conn.rollback()
 
     conn.commit()
     cur.close()
     conn.close()
-
-
+    
+    
 init_db()
 
  # ---------------- HOME ----------------
@@ -1073,29 +1082,42 @@ def add_rewards(username, xp=0, gems=0, blinks=0, coins=0, reason="Reward"):
     conn = get_conn()
     cur = conn.cursor()
 
+    # Create player row if it doesn't exist
     cur.execute("""
         INSERT INTO player_rewards(username)
         VALUES(%s)
         ON CONFLICT(username) DO NOTHING
     """, (username,))
 
+    # Update rewards
     cur.execute("""
         UPDATE player_rewards
         SET
-            xp = xp + %s,
-            gems = gems + %s,
-            blinks = blinks + %s,
-            coins = coins + %s
+            xp = COALESCE(xp,0) + %s,
+            gems = COALESCE(gems,0) + %s,
+            blinks = COALESCE(blinks,0) + %s,
+            coins = COALESCE(coins,0) + %s
         WHERE username=%s
     """, (xp, gems, blinks, coins, username))
 
+    # Save history
     cur.execute("""
         INSERT INTO reward_history
-        (username,reward_type,xp,gems,blinks,coins)
+        (username, reward_type, xp, gems, blinks, coins)
         VALUES(%s,%s,%s,%s,%s,%s)
     """, (username, reason, xp, gems, blinks, coins))
 
+    # Debug: print current rewards
+    cur.execute("""
+        SELECT xp, blinks, gems, coins
+        FROM player_rewards
+        WHERE username=%s
+    """, (username,))
+
+    print("PLAYER REWARDS =", cur.fetchone())
+
     conn.commit()
+    cur.close()
     conn.close()
     
 @app.get("/setup-case-xp")
@@ -1193,21 +1215,21 @@ def check_player_table():
 
     return {"columns": columns}
 
-
 def claim_daily_reward(username):
+
     conn = get_conn()
     cur = conn.cursor()
 
-    today = date.today()
+    now = datetime.now()
 
-    # Create row if user doesn't have one
+    # Create row if it doesn't exist
     cur.execute("""
         INSERT INTO daily_rewards(username)
         VALUES(%s)
         ON CONFLICT(username) DO NOTHING
     """, (username,))
 
-    # Get current reward info
+    # Get current data
     cur.execute("""
         SELECT reward_day, last_claim
         FROM daily_rewards
@@ -1216,43 +1238,67 @@ def claim_daily_reward(username):
 
     reward_day, last_claim = cur.fetchone()
 
-    # Already claimed today
-    if last_claim == today:
-        conn.close()
-        return "already"
+    # 24-hour cooldown
+    if last_claim is not None:
 
-    # Day 1,3,5 = 10 Blinks
+        elapsed = now - last_claim
+
+        if elapsed < timedelta(hours=24):
+
+            remaining = timedelta(hours=24) - elapsed
+
+            hours = remaining.seconds // 3600
+            minutes = (remaining.seconds % 3600) // 60
+
+            conn.close()
+
+            return f"⏳ Come back in {hours}h {minutes}m"
+
+    # ---------- Rewards ----------
+
     if reward_day in [1, 3, 5]:
-        add_rewards(username, blinks=10, reason="Daily Reward")
-        reward = "10 Blinks"
 
-    # Day 2,4,6 = 2 Gems
+        add_rewards(
+            username,
+            blinks=10,
+            reason=f"Daily Reward Day {reward_day}"
+        )
+
+        reward = "⚡ 10 Blinks"
+
     elif reward_day in [2, 4, 6]:
-        add_rewards(username, gems=2, reason="Daily Reward")
-        reward = "2 Gems"
 
-    # Day 7 = Mystery Chest
+        add_rewards(
+            username,
+            gems=2,
+            reason=f"Daily Reward Day {reward_day}"
+        )
+
+        reward = "💎 2 Gems"
+
     else:
-        chest = randint(1, 4)
+
+        chest = randint(1,4)
 
         if chest == 1:
             add_rewards(username, blinks=50, reason="Mystery Chest")
-            reward = "Mystery Chest: 50 Blinks"
+            reward = "🎁 Mystery Chest: 50 Blinks"
 
         elif chest == 2:
             add_rewards(username, gems=10, reason="Mystery Chest")
-            reward = "Mystery Chest: 10 Gems"
+            reward = "🎁 Mystery Chest: 10 Gems"
 
         elif chest == 3:
             add_rewards(username, blinks=100, reason="Mystery Chest")
-            reward = "Mystery Chest: 100 Blinks"
+            reward = "🎁 Mystery Chest: 100 Blinks"
 
         else:
             add_rewards(username, gems=25, reason="Mystery Chest")
-            reward = "Mystery Chest: 25 Gems"
+            reward = "🎁 Mystery Chest: 25 Gems"
 
-    # Next reward day
+    # Move to next reward day
     next_day = reward_day + 1
+
     if next_day > 7:
         next_day = 1
 
@@ -1261,7 +1307,7 @@ def claim_daily_reward(username):
         SET reward_day=%s,
             last_claim=%s
         WHERE username=%s
-    """, (next_day, today, username))
+    """, (next_day, now, username))
 
     conn.commit()
     conn.close()
@@ -1276,12 +1322,51 @@ def daily_reward(request: Request):
     if not username:
         return RedirectResponse("/login", status_code=303)
 
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # Create row if it doesn't exist
+    cur.execute("""
+        INSERT INTO daily_rewards(username)
+        VALUES(%s)
+        ON CONFLICT(username) DO NOTHING
+    """, (username,))
+
+    cur.execute("""
+        SELECT reward_day, last_claim
+        FROM daily_rewards
+        WHERE username=%s
+    """, (username,))
+
+    reward_day, last_claim = cur.fetchone()
+
+    conn.commit()
+    conn.close()
+
+    return templates.TemplateResponse(
+        "daily_reward.html",
+        {
+            "request": request,
+            "reward_day": reward_day,
+            "last_claim": last_claim
+        }
+    )
+    
+@app.post("/claim-daily-reward")
+def claim_reward(request: Request):
+
+    username = request.session.get("username")
+
+    if not username:
+        return RedirectResponse("/login", status_code=303)
+
     reward = claim_daily_reward(username)
 
     return templates.TemplateResponse(
         "daily_reward.html",
         {
             "request": request,
-            "reward": reward
+            "reward": reward,
+            "claimed": True
         }
     )

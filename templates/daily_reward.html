@@ -59,11 +59,42 @@
 
 <div class="card">
 
-    <h1>🎁 Daily Reward</h1>
+    <h1>🎁 Daily Rewards</h1>
 
-    <div class="reward">
-        {{ reward }}
-    </div>
+    <h2>Day {{ reward_day }}</h2>
+
+    {% if reward_day == 1 or reward_day == 3 or reward_day == 5 %}
+        <div class="reward">
+            ⚡ Today's Reward: <b>10 Blinks</b>
+        </div>
+
+    {% elif reward_day == 2 or reward_day == 4 or reward_day == 6 %}
+        <div class="reward">
+            💎 Today's Reward: <b>2 Gems</b>
+        </div>
+
+    {% else %}
+        <div class="reward">
+            🎁 Today's Reward: <b>Mystery Chest</b>
+        </div>
+    {% endif %}
+
+    {% if claimed %}
+        <div class="reward">
+            🎉 {{ reward }}
+        </div>
+
+    {% else %}
+
+    <form action="/claim-daily-reward" method="post">
+        <button class="btn" type="submit">
+            🎁 Claim Reward
+        </button>
+    </form>
+
+    {% endif %}
+
+    <br><br>
 
     <a href="/dashboard" class="btn">
         Back to Dashboard
